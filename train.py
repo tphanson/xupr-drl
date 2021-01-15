@@ -13,7 +13,7 @@ from criterion import ExpectedReturn
 # Trick
 # No GPU: my super-extra-fast-and-furiuos-ahuhu machine
 # GPUs: training servers
-LOCAL = not len(tf.config.list_physical_devices('GPU')) > 0
+# LOCAL = not len(tf.config.list_physical_devices('GPU')) > 0
 
 
 # Environment
@@ -51,8 +51,6 @@ eval_step = 1000
 start = time.time()
 loss = 0
 while agent.get_step() <= num_iterations:
-    if LOCAL:
-        train_env.render()
     replay_buffer.collect_steps(train_env, agent)
     experience, _ = next(iterator)
     loss += agent.train(experience)

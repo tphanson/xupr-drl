@@ -7,7 +7,7 @@ from helper.utils import parse_experiences
 
 # Saving dir
 CHECKPOINT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                              './models/checkpoints')
+                              '../models/checkpoints')
 
 
 class Network():
