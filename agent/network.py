@@ -21,9 +21,11 @@ class Network():
         self.epsilon = 0.9
         self.discount = 0.9
         self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
+        self._callback_period = 1000
         self.step = tf.Variable(initial_value=0, dtype=tf.int32, name='step')
         # Policies
         self.policy = self._policy()
+        self.target_policy = self._policy()
         # Checkpoints
         self.checkpoint = tf.train.Checkpoint(
             optimizer=self.optimizer,
@@ -36,6 +38,15 @@ class Network():
             max_to_keep=1
         )
         self._load_checkpoint()
+        # Double Q-Learning
+        self._update_target_policy()
+
+    """
+    Deep Q-Learning
+    """
+
+    def get_step(self):
+        return int(self.step.numpy())
 
     def _data_spec(self):
         return trajectory.from_transition(
@@ -74,6 +85,17 @@ class Network():
         # Return model
         return keras.Model(inputs=inputs, outputs=x)
 
+    """
+    Double Q-Learning
+    """
+
+    def _update_target_policy(self):
+        self.target_policy.set_weights(self.policy.get_weights())
+
+    """
+    Predict
+    """
+
     def _explore(self, actions):
         exploring = tf.cast(tf.greater(
             tf.random.uniform(actions.shape, minval=0, maxval=1),
@@ -94,9 +116,14 @@ class Network():
         actions = self._explore(actions)
         return policy_step.PolicyStep(action=actions, state=(), info=())
 
+    """
+    Train
+    """
+
     @tf.function
-    def _loss(self):
-        return 0
+    def _loss(self, prediction, target):
+        loss = tf.reduce_mean(tf.square(prediction - target))
+        return loss
 
     @tf.function
     def _train_step(self, step_types, states, actions, rewards, next_states):
@@ -107,7 +134,7 @@ class Network():
                 batch_dims=1
             )
             next_q_values = tf.reduce_max(
-                self.policy(next_states),
+                self.target_policy(next_states),
                 axis=1
             )
             not_last = tf.cast(
@@ -118,7 +145,7 @@ class Network():
                 dtype=tf.float32
             )
             q_targets = rewards + self.discount * next_q_values * not_last
-            loss = tf.reduce_mean(tf.square(q_values - q_targets))
+            loss = self._loss(q_values, q_targets)
         variables = self.policy.trainable_variables
         gradients = tape.gradient(loss, variables)
         self.optimizer.apply_gradients(zip(gradients, variables))
@@ -132,15 +159,17 @@ class Network():
             experiences)
         loss = self._train_step(
             step_types, states, actions, rewards, next_states)
-        if self.step % 1000 == 0:
+        if self.step % self._callback_period == 0:
             self._save_checkpoint()
+            self._update_target_policy()
         return loss
+
+    """
+    Save/Load models
+    """
 
     def _load_checkpoint(self):
         self.checkpoint.restore(self.manager.latest_checkpoint)
 
     def _save_checkpoint(self):
         self.manager.save()
-
-    def get_step(self):
-        return int(self.step.numpy())

@@ -6,8 +6,8 @@ Manually construct a comprehensive DRL model which use all state-of-the-art tech
 We use [OhmniInSpacev0](https://github.com/tphanson/tf-agent-labs/tree/c51)
 
 ## Checklist
-- [ ] Q-Learning
-- [ ] Deep Q-Learning (Add CNN)
+- [x] Q-Learning
+- [x] Deep Q-Learning (Add CNN)
 - [ ] Deep Recurrent Q-Learning (Add RNN)
 - [ ] Prioritized Experience Replay
 - [ ] Double Q-Learning
