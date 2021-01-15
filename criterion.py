@@ -1,9 +1,9 @@
 import os
 import matplotlib.pyplot as plt
 import ray
-from tf_agents.utils import common
-from agent.dqn import DQN
+
 from env import OhmniInSpace
+from agent import network
 
 ray.init()
 
@@ -12,26 +12,25 @@ ONE_GIGABYTES = 1024 * 1024 * 1024
 
 @ray.remote(memory=2 * ONE_GIGABYTES)
 class EvalActor(object):
-    def __init__(self, num_of_obstacles):
+    def __init__(self):
         self.env = OhmniInSpace.env()
         for pyenv in self.env.envs:
             self.max_steps = pyenv.max_steps
             break
-        OhmniInSpace.promote_difficulty(self.env, num_of_obstacles)
-        self.checkpoint = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                       './models/checkpoints')
-        self.dqn = DQN(self.env, self.checkpoint)
-        self.dqn.agent.train = common.function(self.dqn.agent.train)
+        self.agent = network.Network(
+            time_step_spec=self.env.time_step_spec(),
+            observation_spec=self.env.observation_spec(),
+            action_spec=self.env.action_spec(),
+        )
 
     def eval(self):
         time_step = self.env.reset()
         steps = self.max_steps
         episode_return = 0.0
-        state = self.dqn.q_net.get_initial_state()
         while not time_step.is_last():
             steps -= 1
-            policy_step = self.dqn.agent.policy.action(time_step, state)
-            action, state, _ = policy_step
+            policy_step = self.agent.action(time_step)
+            action, _, _ = policy_step
             time_step = self.env.step(action)
             episode_return += time_step.reward
         episode_return += time_step.reward * steps
@@ -42,9 +41,9 @@ class ExpectedReturn:
     def __init__(self):
         self.returns = None
 
-    def eval_multiple_episodes(self, num_episodes, num_of_obstacles):
+    def eval_multiple_episodes(self, num_episodes):
         actors = [
-            EvalActor.remote(num_of_obstacles)
+            EvalActor.remote()
             for _ in range(num_episodes)
         ]
         futures = [
@@ -59,9 +58,8 @@ class ExpectedReturn:
         del futures
         return avg_return
 
-    def eval(self, num_episodes=5, num_of_obstacles=0):
-        avg_return = self.eval_multiple_episodes(
-            num_episodes, num_of_obstacles)
+    def eval(self, num_episodes=5):
+        avg_return = self.eval_multiple_episodes(num_episodes)
         if self.returns is None:
             self.returns = [avg_return]
         else:
