@@ -3,7 +3,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tf_agents.trajectories import policy_step, trajectory, time_step
 
-from helper.utils import parse_experiences
+from helper.utils import parse_experiences, build_mask
 
 # Saving dir
 CHECKPOINT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -23,6 +23,17 @@ class Network():
         self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
         self._callback_period = 1000
         self.step = tf.Variable(initial_value=0, dtype=tf.int32, name='step')
+        # Deep Q-Learning
+        self._num_of_actions = self.action_spec.maximum - self.action_spec.minimum + 1
+        # Distributional Learning (C51)
+        self._num_of_atoms = 51
+        self._min_q_value = -3
+        self._max_q_value = 1
+        self._supports = tf.linspace(
+            tf.constant(self._min_q_value, dtype=tf.float32),
+            tf.constant(self._max_q_value, dtype=tf.float32),
+            self._num_of_atoms
+        )
         # Policies
         self.policy = self._policy()
         self.target_policy = self._policy()
@@ -42,11 +53,15 @@ class Network():
         self._update_target_policy()
 
     """
-    Deep Q-Learning
+    Common functions
     """
 
     def get_step(self):
         return int(self.step.numpy())
+
+    """
+    Deep Q-Learning
+    """
 
     def _data_spec(self):
         return trajectory.from_transition(
@@ -58,7 +73,6 @@ class Network():
     def _policy(self):
         # Define I/O
         image_shape = self.observation_spec.shape
-        num_of_actions = self.action_spec.maximum - self.action_spec.minimum + 1
         # Define network
         inputs = keras.layers.Input(shape=image_shape)
         cnn = keras.Sequential([  # (96, 96, *)
@@ -72,11 +86,12 @@ class Network():
                 filters=128, kernel_size=(3, 3), strides=(2, 2), activation='relu'),
             keras.layers.MaxPooling2D((2, 2)),  # (5, 5, *)
             keras.layers.Flatten(),
-            keras.layers.Dense(768, activation='relu'),
+            keras.layers.Dense(2048, activation='relu'),
         ])
         rnn = None
         head = keras.Sequential([
-            keras.layers.Dense(num_of_actions),
+            keras.layers.Dense(self._num_of_actions * self._num_of_atoms),
+            keras.layers.Reshape((self._num_of_actions, self._num_of_atoms)),
             keras.layers.Softmax(),
         ])
         # Flow data
@@ -92,60 +107,115 @@ class Network():
     def _update_target_policy(self):
         self.target_policy.set_weights(self.policy.get_weights())
 
+    """ Distributional Learning """
+
+    def _align(self, x, q, batch_size):
+        # Fundamental computation
+        clipped_x = tf.minimum(tf.maximum(
+            x, self._min_q_value), self._max_q_value)
+        delta_z = (self._max_q_value - self._min_q_value) / \
+            (self._num_of_atoms - 1)
+        b = (clipped_x - self._min_q_value) / delta_z
+        l = tf.math.floor(b)
+        u = tf.math.ceil(b)
+        # Create indices masks
+        mask_i = build_mask(batch_size, self._num_of_atoms)
+        mask_l = tf.repeat(
+            tf.expand_dims(l, axis=1),
+            repeats=[self._num_of_atoms],
+            axis=1
+        )
+        mask_u = tf.repeat(
+            tf.expand_dims(u, axis=1),
+            repeats=[self._num_of_atoms],
+            axis=1
+        )
+        # Compare to get boolean (active node)
+        bool_l = tf.cast(tf.equal(mask_i, mask_l), dtype=tf.float32)
+        bool_u = tf.cast(tf.equal(mask_i, mask_u), dtype=tf.float32)
+        # Compute ml at active nodes
+        _ml = tf.repeat(
+            tf.expand_dims(q * (u - b), axis=1),
+            repeats=[self._num_of_atoms],
+            axis=1
+        )
+        ml = tf.reduce_sum(tf.multiply(bool_l, _ml), axis=-1)
+        _mu = tf.repeat(
+            tf.expand_dims(q * (b - l), axis=1),
+            repeats=[self._num_of_atoms],
+            axis=1
+        )
+        mu = tf.reduce_sum(tf.multiply(bool_u, _mu), axis=-1)
+        # Return aligned distribution
+        return mu + ml
+
     """
     Predict
     """
 
-    def _explore(self, actions):
+    def _greedy_action(self, observation):
+        distributions = self.target_policy(observation)
+        transposed_x = tf.reshape(self._supports, (self._num_of_atoms, 1))
+        q_values = tf.matmul(distributions, transposed_x)
+        actions = tf.argmax(q_values, axis=1, output_type=tf.int32)
+        return actions
+
+    def _explore(self, greedy_actions):
         exploring = tf.cast(tf.greater(
-            tf.random.uniform(actions.shape, minval=0, maxval=1),
-            tf.fill(actions.shape, self.epsilon),
+            tf.random.uniform(greedy_actions.shape, minval=0, maxval=1),
+            tf.fill(greedy_actions.shape, self.epsilon),
         ), dtype=tf.int32)
         random_actions = tf.random.uniform(
-            actions.shape,
+            greedy_actions.shape,
             minval=self.action_spec.minimum,
             maxval=self.action_spec.maximum,
             dtype=tf.int32
         )
-        actions = exploring * random_actions + (1 - exploring) * actions
+        actions = exploring * random_actions + (1 - exploring) * greedy_actions
         return actions
 
     def action(self, ts):
-        q_values = self.policy(ts.observation)
-        actions = tf.argmax(q_values, axis=1, output_type=tf.int32)
-        actions = self._explore(actions)
+        greedy_actions = self._greedy_action(ts.observation)
+        (batch_size, _) = greedy_actions.shape
+        greedy_actions = tf.reshape(greedy_actions, (batch_size,))
+        actions = self._explore(greedy_actions)
         return policy_step.PolicyStep(action=actions, state=(), info=())
 
     """
     Train
     """
 
-    @tf.function
+    # @tf.function
     def _loss(self, prediction, target):
-        loss = tf.reduce_mean(tf.square(prediction - target))
+        batch_loss = tf.reduce_sum(
+            -tf.multiply(target, tf.math.log(prediction)),
+            axis=-1
+        )
+        loss = tf.reduce_mean(batch_loss, axis=-1)
         return loss
 
-    @tf.function
+    # @tf.function
     def _train_step(self, step_types, states, actions, rewards, next_states):
         with tf.GradientTape() as tape:
-            q_values = tf.gather_nd(
-                self.policy(states),
-                actions,
-                batch_dims=1
-            )
-            next_q_values = tf.reduce_max(
-                self.target_policy(next_states),
-                axis=1
-            )
-            not_last = tf.cast(
-                tf.less(
-                    step_types,
-                    time_step.StepType.LAST
+            (batch_size,) = step_types.shape
+            z = self.policy(states)
+            p = tf.gather_nd(z, actions, batch_dims=1)
+            optiomal_actions = self._greedy_action(next_states)
+            next_z = self.target_policy(next_states)
+            q = tf.gather_nd(next_z, optiomal_actions, batch_dims=1)
+            not_last = tf.reshape(
+                tf.cast(
+                    tf.less(step_types, time_step.StepType.LAST),
+                    dtype=tf.float32
                 ),
-                dtype=tf.float32
+                (batch_size, 1)
             )
-            q_targets = rewards + self.discount * next_q_values * not_last
-            loss = self._loss(q_values, q_targets)
+            supports_batch = tf.stack(
+                [self._supports for _ in range(batch_size)])
+            rewards = tf.reshape(rewards, (batch_size, 1))
+            x = rewards + self.discount * supports_batch * not_last
+            m = self._align(x, q, batch_size)
+            loss = self._loss(p, m)
         variables = self.policy.trainable_variables
         gradients = tape.gradient(loss, variables)
         self.optimizer.apply_gradients(zip(gradients, variables))

@@ -29,3 +29,13 @@ def parse_experiences(experiences):
         )
     )
     return step_types, states, actions, rewards, next_states
+
+
+def build_mask(batch_size, num_of_atoms):
+    return tf.constant([
+        [
+            [
+                i for _ in range(num_of_atoms)
+            ] for i in range(num_of_atoms)
+        ] for _ in range(batch_size)
+    ], dtype=tf.float32)
