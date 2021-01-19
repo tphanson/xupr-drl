@@ -13,13 +13,15 @@ We use [OhmniInSpacev0](https://github.com/tphanson/tf-agent-labs/tree/c51)
 - [ ] Double Q-Learning
 - [ ] Dueling Networks
 - [ ] Multi-steps Learning
-- [ ] Distributional Reinforcement Learning
+- [x] Distributional Reinforcement Learning
 - [ ] Distributed Learning
 
 ## References
 
-[1] Hessel, M., et al. "Rainbow: Combining Improvements in Deep Reinforcement Learning. ArXiv e-prints (Oct." arXiv preprint cs.AI/1710.02298 (2017).
+[1] Hessel, Matteo, et al. "Rainbow: Combining improvements in deep reinforcement learning." Proceedings of the AAAI Conference on Artificial Intelligence. Vol. 32. No. 1. 2018.
 
 [2] Horgan, Dan, et al. "Distributed prioritized experience replay." arXiv preprint arXiv:1803.00933 (2018).
 
 [3] Kapturowski, Steven, et al. "Recurrent experience replay in distributed reinforcement learning." International conference on learning representations. 2018.
+
+[4] Tomassoli, Massimiliano. “Distributional RL.” Simple Machine Learning, mtomassoli.github.io/2017/12/08/distributional_rl/.
