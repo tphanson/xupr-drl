@@ -36,7 +36,6 @@ class Network():
         )
         # Policies
         self.policy = self._policy()
-        self.target_policy = self._policy()
         # Checkpoints
         self.checkpoint = tf.train.Checkpoint(
             optimizer=self.optimizer,
@@ -50,6 +49,7 @@ class Network():
         )
         self._load_checkpoint()
         # Double Q-Learning
+        self.target_policy = self._policy()
         self._update_target_policy()
 
     """
@@ -130,10 +130,10 @@ class Network():
             repeats=[self._num_of_atoms],
             axis=1
         )
-        # Compare to get boolean (active node)
+        # Compare to get boolean (active nodes)
         bool_l = tf.cast(tf.equal(mask_i, mask_l), dtype=tf.float32)
         bool_u = tf.cast(tf.equal(mask_i, mask_u), dtype=tf.float32)
-        # Compute ml at active nodes
+        # Compute ml, mu at active nodes
         _ml = tf.repeat(
             tf.expand_dims(q * (u - b), axis=1),
             repeats=[self._num_of_atoms],
@@ -185,7 +185,7 @@ class Network():
     Train
     """
 
-    # @tf.function
+    @tf.function
     def _loss(self, prediction, target):
         batch_loss = tf.reduce_sum(
             -tf.multiply(target, tf.math.log(prediction)),
@@ -194,7 +194,7 @@ class Network():
         loss = tf.reduce_mean(batch_loss, axis=-1)
         return loss
 
-    # @tf.function
+    @tf.function
     def _train_step(self, step_types, states, actions, rewards, next_states):
         with tf.GradientTape() as tape:
             (batch_size,) = step_types.shape
