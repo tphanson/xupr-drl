@@ -203,16 +203,16 @@ class Network():
             optiomal_actions = self._greedy_action(next_states)
             next_z = self.target_policy(next_states)
             q = tf.gather_nd(next_z, optiomal_actions, batch_dims=1)
-            not_last = tf.reshape(
+            not_last = tf.expand_dims(
                 tf.cast(
                     tf.less(step_types, time_step.StepType.LAST),
                     dtype=tf.float32
                 ),
-                (batch_size, 1)
+                axis=-1
             )
             supports_batch = tf.stack(
                 [self._supports for _ in range(batch_size)])
-            rewards = tf.reshape(rewards, (batch_size, 1))
+            rewards = tf.expand_dims(rewards, axis=-1)
             x = rewards + self.discount * supports_batch * not_last
             m = self._align(x, q, batch_size)
             loss = self._loss(p, m)
