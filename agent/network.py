@@ -153,7 +153,7 @@ class Network():
     # Distributional Learning
     #
 
-    def _align(self, x, q, batch_size):
+    def _align(self, x, q):
         # Fundamental computation
         clipped_x = tf.minimum(tf.maximum(
             x, self._min_q_value), self._max_q_value)
@@ -163,6 +163,7 @@ class Network():
         l = tf.math.floor(b)
         u = tf.math.ceil(b)
         # Create indices masks
+        (batch_size, _) = x.shape
         mask_i = build_mask(batch_size, self._num_of_atoms)
         mask_l = tf.repeat(
             tf.expand_dims(l, axis=1),
@@ -241,14 +242,13 @@ class Network():
     @tf.function
     def _train_step(self, step_types, start_state, action, rewards, end_state):
         with tf.GradientTape() as tape:
-            (batch_size, _) = step_types.shape
             z = self.policy(start_state)
             p = tf.gather_nd(z, action, batch_dims=1)
             optiomal_actions = self._greedy_action(end_state)
             next_z = self.target_policy(end_state)
             q = tf.gather_nd(next_z, optiomal_actions, batch_dims=1)
             x = self._expected_return(step_types, rewards)
-            m = self._align(x, q, batch_size)
+            m = self._align(x, q)
             loss = self._loss(p, m)
         variables = self.policy.trainable_variables
         gradients = tape.gradient(loss, variables)
