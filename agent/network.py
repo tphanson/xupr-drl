@@ -229,7 +229,7 @@ class Network():
     # Train
     #
 
-    # @tf.function
+    @tf.function
     def _loss(self, prediction, target):
         batch_loss = tf.reduce_sum(
             -tf.multiply(target, tf.math.log(prediction)),
@@ -238,7 +238,7 @@ class Network():
         loss = tf.reduce_mean(batch_loss, axis=-1)
         return loss
 
-    # @tf.function
+    @tf.function
     def _train_step(self, step_types, start_state, action, rewards, end_state):
         with tf.GradientTape() as tape:
             (batch_size, _) = step_types.shape
