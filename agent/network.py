@@ -19,7 +19,7 @@ class Network():
         self.data_spec = self._data_spec()
         # Training params
         self.epsilon = 0.9
-        self.discount = 0.9
+        self.gamma = 0.9
         self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
         self._callback_period = 1000
         self.step = tf.Variable(initial_value=0, dtype=tf.int32, name='step')
@@ -51,17 +51,22 @@ class Network():
         # Double Q-Learning
         self.target_policy = self._policy()
         self._update_target_policy()
+        # Multi-steps Learning
+        self._n_steps = 5
 
-    """
-    Common functions
-    """
+    #
+    # Common functions
+    #
 
     def get_step(self):
         return int(self.step.numpy())
 
-    """
-    Deep Q-Learning
-    """
+    def get_n_steps(self):
+        return self._n_steps
+
+    #
+    # Deep Q-Learning
+    #
 
     def _data_spec(self):
         return trajectory.from_transition(
@@ -100,14 +105,53 @@ class Network():
         # Return model
         return keras.Model(inputs=inputs, outputs=x)
 
-    """
-    Double Q-Learning
-    """
+    #
+    # Double Q-Learning
+    #
 
     def _update_target_policy(self):
         self.target_policy.set_weights(self.policy.get_weights())
 
-    """ Distributional Learning """
+    #
+    # Multi-steps Learning
+    #
+
+    def _expected_return(self, step_types, rewards):
+        (batch_size, _) = step_types.shape
+        not_last = tf.reverse(tf.transpose(tf.stack(
+            [tf.reduce_prod(tf.split(
+                tf.cast(
+                    tf.less(step_types, time_step.StepType.LAST),
+                    dtype=tf.float32
+                ),
+                num_or_size_splits=[self._n_steps - 1 - i, i + 1],
+                axis=-1
+            )[0], axis=-1) for i in range(self._n_steps)]
+        )), axis=[-1])
+        prev_states_not_last, end_state_not_last = tf.split(
+            not_last,
+            num_or_size_splits=[self._n_steps - 1, 1],
+            axis=-1
+        )
+        prev_states_discount, last_state_discount = tf.split(
+            tf.stack(
+                [[self.gamma**i for i in range(self._n_steps)] for _ in range(batch_size)]),
+            num_or_size_splits=[self._n_steps - 1, 1],
+            axis=-1
+        )
+        supports_batch = tf.stack(
+            [self._supports for _ in range(batch_size)])
+        discounted_rewards = tf.reduce_sum(
+            prev_states_not_last * prev_states_discount * rewards,
+            axis=-1,
+            keepdims=True
+        )
+        last_return = end_state_not_last * last_state_discount * supports_batch
+        return discounted_rewards + last_return
+
+    #
+    # Distributional Learning
+    #
 
     def _align(self, x, q, batch_size):
         # Fundamental computation
@@ -149,9 +193,9 @@ class Network():
         # Return aligned distribution
         return mu + ml
 
-    """
-    Predict
-    """
+    #
+    # Predict
+    #
 
     def _greedy_action(self, observation):
         distributions = self.target_policy(observation)
@@ -181,11 +225,11 @@ class Network():
         actions = self._explore(greedy_actions)
         return policy_step.PolicyStep(action=actions, state=(), info=())
 
-    """
-    Train
-    """
+    #
+    # Train
+    #
 
-    @tf.function
+    # @tf.function
     def _loss(self, prediction, target):
         batch_loss = tf.reduce_sum(
             -tf.multiply(target, tf.math.log(prediction)),
@@ -194,26 +238,16 @@ class Network():
         loss = tf.reduce_mean(batch_loss, axis=-1)
         return loss
 
-    @tf.function
-    def _train_step(self, step_types, states, actions, rewards, next_states):
+    # @tf.function
+    def _train_step(self, step_types, start_state, action, rewards, end_state):
         with tf.GradientTape() as tape:
-            (batch_size,) = step_types.shape
-            z = self.policy(states)
-            p = tf.gather_nd(z, actions, batch_dims=1)
-            optiomal_actions = self._greedy_action(next_states)
-            next_z = self.target_policy(next_states)
+            (batch_size, _) = step_types.shape
+            z = self.policy(start_state)
+            p = tf.gather_nd(z, action, batch_dims=1)
+            optiomal_actions = self._greedy_action(end_state)
+            next_z = self.target_policy(end_state)
             q = tf.gather_nd(next_z, optiomal_actions, batch_dims=1)
-            not_last = tf.expand_dims(
-                tf.cast(
-                    tf.less(step_types, time_step.StepType.LAST),
-                    dtype=tf.float32
-                ),
-                axis=-1
-            )
-            supports_batch = tf.stack(
-                [self._supports for _ in range(batch_size)])
-            rewards = tf.expand_dims(rewards, axis=-1)
-            x = rewards + self.discount * supports_batch * not_last
+            x = self._expected_return(step_types, rewards)
             m = self._align(x, q, batch_size)
             loss = self._loss(p, m)
         variables = self.policy.trainable_variables
@@ -222,21 +256,19 @@ class Network():
         return loss
 
     def train(self, experiences):
-        # Increase training step
         self.step.assign_add(1)
-        # Train
-        step_types, states, actions, rewards, next_states = parse_experiences(
-            experiences)
+        step_types, start_state, action, rewards, end_state = parse_experiences(
+            experiences, self._n_steps)
         loss = self._train_step(
-            step_types, states, actions, rewards, next_states)
+            step_types, start_state, action, rewards, end_state)
         if self.step % self._callback_period == 0:
             self._save_checkpoint()
             self._update_target_policy()
         return loss
 
-    """
-    Save/Load models
-    """
+    #
+    # Save/Load models
+    #
 
     def _load_checkpoint(self):
         self.checkpoint.restore(self.manager.latest_checkpoint)

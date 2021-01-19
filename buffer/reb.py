@@ -19,10 +19,10 @@ class ReplayExperienceBuffer:
     def clear(self):
         return self.buffer.clear()
 
-    def as_dataset(self, sample_batch_size=32):
+    def as_dataset(self, n_steps=2, sample_batch_size=32):
         return self.buffer.as_dataset(
             sample_batch_size=sample_batch_size,
-            num_steps=2
+            num_steps=n_steps
         ).prefetch(3)
 
     def collect(self, env, policy):
