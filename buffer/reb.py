@@ -12,6 +12,7 @@ class ReplayExperienceBuffer:
             batch_size=self.batch_size,
             max_length=self.replay_buffer_capacity,
         )
+        self.state = None
 
     def __len__(self):
         return self.buffer.num_frames()
@@ -26,12 +27,17 @@ class ReplayExperienceBuffer:
         ).prefetch(3)
 
     def collect(self, env, policy):
+        if self.state is None:
+            self.state = policy.get_initial_state(batch_size=1)
         time_step = env.current_time_step()
-        action_step = policy.action(time_step)
-        next_time_step = env.step(action_step.action)
+        policy_step = policy.action(time_step, self.state)
+        action, self.state, _ = policy_step
+        next_time_step = env.step(action)
         traj = trajectory.from_transition(
-            time_step, action_step, next_time_step)
+            time_step, policy_step, next_time_step)
         self.buffer.add_batch(traj)
+        if traj.is_last():
+            self.state = policy.get_initial_state(batch_size=1)
         return traj
 
     def collect_steps(self, env, policy, steps=1):

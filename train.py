@@ -39,6 +39,7 @@ replay_buffer = reb.ReplayExperienceBuffer(
 random_policy = random_tf_policy.RandomTFPolicy(
     time_step_spec=agent.time_step_spec,
     action_spec=agent.action_spec,
+    policy_state_spec=agent.policy_state_spec,
 )
 replay_buffer.collect_steps(
     train_env, random_policy,
