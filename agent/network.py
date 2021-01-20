@@ -52,7 +52,7 @@ class Network():
         self.target_policy = self._policy()
         self._update_target_policy()
         # Multi-steps Learning
-        self._n_steps = 3
+        self._n_steps = 5
 
     #
     # Common functions
