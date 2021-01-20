@@ -306,7 +306,7 @@ class Network():
         with tf.GradientTape() as tape:
             z, _ = self.policy((start_state, start_policy_state))
             p = tf.gather_nd(z, action, batch_dims=1)
-            optiomal_actions = self._greedy_action(end_state, end_policy_state)
+            optiomal_actions, _ = self._greedy_action(end_state, end_policy_state)
             next_z, _ = self.target_policy((end_state, end_policy_state))
             q = tf.gather_nd(next_z, optiomal_actions, batch_dims=1)
             x = self._expected_return(step_types, rewards)
