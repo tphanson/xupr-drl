@@ -98,7 +98,7 @@ class Network():
                 filters=128, kernel_size=(3, 3), strides=(2, 2), activation='relu'),
             keras.layers.MaxPooling2D((2, 2)),  # (5, 5, *)
             keras.layers.Flatten(),
-            keras.layers.Dense(2048, activation='relu'),
+            keras.layers.Dense(1024, activation='relu'),
         ])
         init_state = keras.layers.Input(shape=(768,))
         rnn = keras.layers.GRU(768, return_state=True, name='feedback')
@@ -163,6 +163,7 @@ class Network():
     # Distributional Learning
     #
 
+    @tf.function
     def _align(self, x, q):
         # Fundamental computation
         clipped_x = tf.minimum(tf.maximum(
@@ -217,7 +218,8 @@ class Network():
         initial_states = tf.zeros(
             (batch_size, feedback.units), dtype=tf.float32)
         return initial_states
-
+    
+    @tf.function
     def _hidden_states(self, experiences):
         not_lasts = tf.split(
             tf.cast(
