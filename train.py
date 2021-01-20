@@ -67,3 +67,5 @@ while agent.get_step() <= num_iterations:
         # Reset
         start = time.time()
         loss = 0
+
+ER.save()
