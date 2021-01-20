@@ -20,7 +20,7 @@ class Network():
         # Training params
         self.epsilon = 0.9
         self.gamma = 0.9
-        self.optimizer = keras.optimizers.Adam(learning_rate=0.0001)
+        self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
         self._callback_period = 1000
         self.step = tf.Variable(initial_value=0, dtype=tf.int32, name='step')
         # Deep Q-Learning
@@ -52,7 +52,7 @@ class Network():
         self.target_policy = self._policy()
         self._update_target_policy()
         # Multi-steps Learning
-        self._n_steps = 5
+        self._n_steps = 3
 
     #
     # Common functions
@@ -231,8 +231,8 @@ class Network():
 
     @tf.function
     def _loss(self, prediction, target):
-        batch_loss = tf.reduce_sum(
-            -tf.multiply(target, tf.math.log(prediction)),
+        batch_loss = -tf.reduce_sum(
+            tf.multiply(target, tf.math.log(prediction)),
             axis=-1
         )
         loss = tf.reduce_mean(batch_loss, axis=-1)
