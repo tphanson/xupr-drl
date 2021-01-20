@@ -27,7 +27,7 @@ class ReplayExperienceBuffer:
 
     def collect(self, env, policy):
         time_step = env.current_time_step()
-        action_step = policy.action(time_step, training=True)
+        action_step = policy.action(time_step)
         next_time_step = env.step(action_step.action)
         traj = trajectory.from_transition(
             time_step, action_step, next_time_step)
