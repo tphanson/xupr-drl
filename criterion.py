@@ -26,10 +26,11 @@ class EvalActor(object):
         time_step = self.env.reset()
         steps = self.max_steps
         episode_return = 0.0
+        state = self.agent.get_initial_state()
         while not time_step.is_last():
             steps -= 1
-            policy_step = self.agent.action(time_step)
-            action, _, _ = policy_step
+            policy_step = self.agent.action(time_step, state)
+            action, state, _ = policy_step
             time_step = self.env.step(action)
             episode_return += time_step.reward
         episode_return += time_step.reward * steps
