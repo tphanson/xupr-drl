@@ -219,11 +219,11 @@ class Network():
         actions = exploring * random_actions + (1 - exploring) * greedy_actions
         return actions
 
-    def action(self, ts, training=False):
+    def action(self, ts):
         greedy_actions = self._greedy_action(ts.observation)
         (batch_size, _) = greedy_actions.shape
+        greedy_actions = tf.squeeze(greedy_actions, axis=-1)
         print(greedy_actions.shape)
-        greedy_actions = tf.reshape(greedy_actions, (batch_size,))
         actions = self._explore(greedy_actions)
         return policy_step.PolicyStep(action=actions, state=(), info=())
 
