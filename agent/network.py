@@ -20,7 +20,7 @@ class Network():
         # Training params
         self.epsilon = 0.9
         self.gamma = 0.9
-        self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
+        self.optimizer = keras.optimizers.Adam(learning_rate=0.0001)
         self._callback_period = 1000
         self.step = tf.Variable(initial_value=0, dtype=tf.int32, name='step')
         # Deep Q-Learning
@@ -221,9 +221,7 @@ class Network():
 
     def action(self, ts):
         greedy_actions = self._greedy_action(ts.observation)
-        (batch_size, _) = greedy_actions.shape
         greedy_actions = tf.squeeze(greedy_actions, axis=-1)
-        print(greedy_actions.shape)
         actions = self._explore(greedy_actions)
         return policy_step.PolicyStep(action=actions, state=(), info=())
 
