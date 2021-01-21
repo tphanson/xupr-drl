@@ -22,7 +22,7 @@ class Network():
         self.epsilon = 0.9
         self.gamma = 0.9
         self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
-        self._callback_period = 1000
+        self._callback_period = 2000
         self.step = tf.Variable(initial_value=0, dtype=tf.int32, name='step')
         # Deep Q-Learning
         self._num_of_actions = self.action_spec.maximum - self.action_spec.minimum + 1
@@ -60,6 +60,9 @@ class Network():
     #
     # Common functions
     #
+
+    def get_callback_period(self):
+        return self._callback_period
 
     def get_step(self):
         return int(self.step.numpy())
@@ -218,7 +221,7 @@ class Network():
         initial_states = tf.zeros(
             (batch_size, feedback.units), dtype=tf.float32)
         return initial_states
-    
+
     @tf.function
     def _hidden_states(self, experiences):
         not_lasts = tf.split(
@@ -255,7 +258,7 @@ class Network():
     #
 
     def _greedy_action(self, observation, init_state):
-        distributions, state = self.target_policy((observation, init_state))
+        distributions, state = self.policy((observation, init_state))
         transposed_x = tf.reshape(self._supports, (self._num_of_atoms, 1))
         q_values = tf.matmul(distributions, transposed_x)
         actions = tf.argmax(q_values, axis=1, output_type=tf.int32)
@@ -308,7 +311,8 @@ class Network():
         with tf.GradientTape() as tape:
             z, _ = self.policy((start_state, start_policy_state))
             p = tf.gather_nd(z, action, batch_dims=1)
-            optiomal_actions, _ = self._greedy_action(end_state, end_policy_state)
+            optiomal_actions, _ = self._greedy_action(
+                end_state, end_policy_state)
             next_z, _ = self.target_policy((end_state, end_policy_state))
             q = tf.gather_nd(next_z, optiomal_actions, batch_dims=1)
             x = self._expected_return(step_types, rewards)

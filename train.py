@@ -33,6 +33,7 @@ ER = ExpectedReturn()
 initial_collect_steps = 2000
 replay_buffer = reb.ReplayExperienceBuffer(
     agent.data_spec,
+    n_steps=agent.get_n_steps(),
     batch_size=train_env.batch_size
 )
 # Init buffer
@@ -45,12 +46,12 @@ replay_buffer.collect_steps(
     train_env, random_policy,
     steps=initial_collect_steps
 )
-dataset = replay_buffer.as_dataset(n_steps=agent.get_n_steps())
+dataset = replay_buffer.as_dataset()
 iterator = iter(dataset)
 
 # Train
 num_iterations = 2000000
-eval_step = 1000
+eval_step = agent.get_callback_period()
 start = time.time()
 loss = 0
 while agent.get_step() <= num_iterations:
@@ -67,5 +68,4 @@ while agent.get_step() <= num_iterations:
         # Reset
         start = time.time()
         loss = 0
-
-ER.save()
+        ER.save()
