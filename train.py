@@ -49,7 +49,7 @@ dataset = replay_buffer.as_dataset(n_steps=agent.get_n_steps())
 iterator = iter(dataset)
 
 # Train
-num_iterations = 200000
+num_iterations = 2000000
 eval_step = 1000
 start = time.time()
 loss = 0

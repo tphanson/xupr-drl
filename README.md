@@ -8,7 +8,7 @@ We use [OhmniInSpacev0](https://github.com/tphanson/tf-agent-labs/tree/c51)
 ## Checklist
 - [x] Q-Learning
 - [x] Deep Q-Learning (Add CNN)
-- [ ] Deep Recurrent Q-Learning (Add RNN)
+- [x] Deep Recurrent Q-Learning (Add RNN)
 - [ ] Prioritized Experience Replay
 - [x] Double Q-Learning
 - [ ] Dueling Networks
