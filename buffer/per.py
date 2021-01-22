@@ -32,7 +32,7 @@ class PrioritizedExperienceRelay:
             table_name=self.name,
             sequence_length=self.n_steps,
             stride_length=1,
-            priority=10,
+            priority=1,
         )
         self.states = None
 

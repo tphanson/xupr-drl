@@ -61,7 +61,7 @@ while agent.get_step() <= num_iterations:
     mean_loss, batch_loss = agent.train(experience)
     new_priority = tf.multiply(
         tf.ones(priority.shape, dtype=tf.float32),
-        tf.expand_dims(batch_loss, axis=-1))
+        tf.expand_dims(batch_loss/agent.get_n_steps(), axis=-1))
     key = tf.reshape(key, shape=[-1]).numpy()
     new_priority = tf.reshape(new_priority, shape=[-1]).numpy()
     updates = {}

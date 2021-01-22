@@ -258,7 +258,7 @@ class Network():
     #
 
     def _greedy_action(self, observation, init_state):
-        distributions, state = self.target_policy((observation, init_state))
+        distributions, state = self.policy((observation, init_state))
         transposed_x = tf.reshape(self._supports, (self._num_of_atoms, 1))
         q_values = tf.matmul(distributions, transposed_x)
         actions = tf.argmax(q_values, axis=1, output_type=tf.int32)
