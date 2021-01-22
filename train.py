@@ -7,7 +7,7 @@ from tf_agents.policies import random_tf_policy
 
 from env import OhmniInSpace
 from agent import network
-from buffer import reb, per
+from buffer import per
 from criterion import ExpectedReturn
 
 # Trick
@@ -59,14 +59,12 @@ while agent.get_step() <= num_iterations:
     experience, info = next(iterator)
     key, probability, table_size, priority = info
     mean_loss, batch_loss = agent.train(experience)
-    new_priority = tf.multiply(
-        tf.ones(priority.shape, dtype=tf.float32),
-        tf.expand_dims(batch_loss/agent.get_n_steps(), axis=-1))
-    key = tf.reshape(key, shape=[-1]).numpy()
-    new_priority = tf.reshape(new_priority, shape=[-1]).numpy()
+    _, last_key = tf.split(key, num_or_size_splits=[-1, 1], axis=-1)
+    last_key = tf.reshape(last_key, shape=[-1]).numpy()
+    new_priority = batch_loss.numpy()
     updates = {}
-    for _key, _new_priority in zip(key, new_priority):
-        updates[_key] = _new_priority
+    for _last_key, _new_priority in zip(last_key, new_priority):
+        updates[_last_key] = _new_priority
     replay_buffer.update_priority(updates)
     loss += mean_loss
     if agent.get_step() % eval_step == 0:
