@@ -71,7 +71,7 @@ class PrioritizedExperienceRelay:
         ).prefetch(3)
 
     def update_priority(self, updates):
-        self.buffer.py_client.mutate_priorities(updates)
+        self.buffer.py_client.mutate_priorities(self.name, updates)
 
     def collect(self, env, policy):
         if self.states is None:
