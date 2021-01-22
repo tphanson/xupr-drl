@@ -258,7 +258,7 @@ class Network():
     #
 
     def _greedy_action(self, observation, init_state):
-        distributions, state = self.policy((observation, init_state))
+        distributions, state = self.target_policy((observation, init_state))
         transposed_x = tf.reshape(self._supports, (self._num_of_atoms, 1))
         q_values = tf.matmul(distributions, transposed_x)
         actions = tf.argmax(q_values, axis=1, output_type=tf.int32)
@@ -295,7 +295,7 @@ class Network():
             axis=-1
         )
         loss = tf.reduce_mean(batch_loss, axis=-1)
-        return loss
+        return loss, batch_loss
 
     @tf.function
     def _train_step(
@@ -317,18 +317,18 @@ class Network():
             q = tf.gather_nd(next_z, optiomal_actions, batch_dims=1)
             x = self._expected_return(step_types, rewards)
             m = self._align(x, q)
-            loss = self._loss(p, m)
+            loss, batch_loss = self._loss(p, m)
         variables = self.policy.trainable_variables
         gradients = tape.gradient(loss, variables)
         self.optimizer.apply_gradients(zip(gradients, variables))
-        return loss
+        return loss, batch_loss
 
     def train(self, experiences):
         self.step.assign_add(1)
         start_policy_state, end_policy_state = self._hidden_states(experiences)
         step_types, start_state, action, rewards, end_state = parse_experiences(
             experiences, self._pre_n_steps, self._n_steps)
-        loss = self._train_step(
+        loss, batch_loss = self._train_step(
             step_types,
             start_state,
             start_policy_state,
@@ -340,7 +340,7 @@ class Network():
         if self.step % self._callback_period == 0:
             self._save_checkpoint()
             self._update_target_policy()
-        return loss
+        return loss, batch_loss
 
     #
     # Save/Load models

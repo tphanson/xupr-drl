@@ -70,6 +70,9 @@ class PrioritizedExperienceRelay:
             num_steps=self.n_steps
         ).prefetch(3)
 
+    def update_priority(self, updates):
+        self.buffer.py_client.mutate_priorities(updates)
+
     def collect(self, env, policy):
         if self.states is None:
             self.states = policy.get_initial_state(batch_size=self.batch_size)
