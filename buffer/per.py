@@ -78,7 +78,7 @@ class PrioritizedExperienceRelay:
             self.states = policy.get_initial_state(batch_size=self.batch_size)
         time_steps = env.current_time_step()
         policy_steps = policy.action(time_steps, self.states)
-        actions, hidden_states, _ = policy_steps
+        actions, policy_states, _ = policy_steps
         next_time_steps = env.step(actions)
         self._add_batch(time_steps, policy_steps, next_time_steps)
         # Reset states
@@ -86,7 +86,10 @@ class PrioritizedExperienceRelay:
             tf.less(time_steps.step_type, time_step.StepType.LAST),
             dtype=tf.float32
         )
-        self.states = tf.multiply(hidden_states, not_lasts)
+        [hidden_states, carry_states] = policy_states
+        hidden_states = tf.multiply(hidden_states, not_lasts)
+        carry_states = tf.multiply(carry_states, not_lasts)
+        self.states = [hidden_states, carry_states]
 
     def collect_steps(self, env, policy, steps=1):
         for _ in range(steps):

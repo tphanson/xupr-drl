@@ -65,8 +65,8 @@ while agent.get_step() <= num_iterations:
     key = tf.reshape(key, shape=[-1]).numpy()
     new_priority = tf.reshape(new_priority, shape=[-1]).numpy()
     updates = {}
-    for _key, _new_priority in zip(key, new_priority):
-        updates[_key] = _new_priority
+    for _key, _priority in zip(key, new_priority):
+        updates[_key] = _priority
     replay_buffer.update_priority(updates)
     loss += mean_loss
     if agent.get_step() % eval_step == 0:

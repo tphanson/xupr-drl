@@ -12,11 +12,16 @@ CHECKPOINT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 class Network():
     def __init__(self, time_step_spec, observation_spec, action_spec):
+        # Network params
+        self.rnn_units = 768
         # Specs
         self.time_step_spec = time_step_spec
         self.observation_spec = observation_spec
         self.action_spec = action_spec
-        self.policy_state_spec = tf.TensorSpec((768,), dtype=tf.float32)
+        self.policy_state_spec = [
+            tf.TensorSpec((self.rnn_units,), dtype=tf.float32),
+            tf.TensorSpec((self.rnn_units,), dtype=tf.float32),
+        ]
         self.data_spec = self._data_spec()
         # Training params
         self.epsilon = 0.9
@@ -88,7 +93,8 @@ class Network():
     def _policy(self):
         # Define I/O
         image_shape = self.observation_spec.shape
-        state_shape = self.policy_state_spec.shape
+        hidden_state_shape = self.policy_state_spec[0].shape
+        carry_state_shape = self.policy_state_spec[1].shape
         # Define network
         inputs = keras.layers.Input(shape=image_shape)
         cnn = keras.Sequential([  # (96, 96, *)
@@ -104,8 +110,10 @@ class Network():
             keras.layers.Flatten(),
             keras.layers.Dense(1024, activation='relu'),
         ])
-        init_state = keras.layers.Input(shape=state_shape)
-        rnn = keras.layers.GRU(state_shape[0], return_state=True, name='feedback')
+        init_hidden_state = keras.layers.Input(shape=hidden_state_shape)
+        init_carry_state = keras.layers.Input(shape=carry_state_shape)
+        rnn = keras.layers.LSTM(
+            self.rnn_units, return_state=True, name='feedback')
         head = keras.Sequential([
             keras.layers.Dense(self._num_of_actions * self._num_of_atoms),
             keras.layers.Reshape((self._num_of_actions, self._num_of_atoms)),
@@ -114,10 +122,14 @@ class Network():
         # Flow data
         x = cnn(inputs)
         x = tf.expand_dims(x, axis=1)
-        x, state = rnn(x, initial_state=init_state)
+        x, h_state, c_state = rnn(
+            x, initial_state=[init_hidden_state, init_carry_state])
         x = head(x)
         # Return model
-        return keras.Model(inputs=[inputs, init_state], outputs=[x, state])
+        return keras.Model(
+            inputs=[inputs, [init_hidden_state, init_carry_state]],
+            outputs=[x, [h_state, c_state]]
+        )
 
     #
     # Double Q-Learning
@@ -167,7 +179,7 @@ class Network():
     # Distributional Learning
     #
 
-    @tf.function
+    # @tf.function
     def _align(self, x, q):
         # Fundamental computation
         clipped_x = tf.minimum(tf.maximum(
@@ -218,12 +230,13 @@ class Network():
         feedback.reset_states()
 
     def get_initial_state(self, batch_size=1):
-        feedback = self.target_policy.get_layer(name='feedback')
-        initial_states = tf.zeros(
-            (batch_size, feedback.units), dtype=tf.float32)
-        return initial_states
+        hidden_states = tf.zeros(
+            (batch_size, self.rnn_units), dtype=tf.float32)
+        carry_states = tf.zeros(
+            (batch_size, self.rnn_units), dtype=tf.float32)
+        return [hidden_states, carry_states]
 
-    @tf.function
+    # @tf.function
     def _hidden_states(self, experiences):
         not_lasts = tf.split(
             tf.cast(
@@ -250,8 +263,12 @@ class Network():
                 start_policy_state = state
             if i == self._pre_n_steps + self._n_steps - 1:
                 end_policy_state = state
-            _, hidden_state = self._greedy_action(observation, state)
-            state = tf.multiply(hidden_state, not_last)
+            _, [hidden_state, carry_state] = self._greedy_action(
+                observation, state)
+            state = [
+                tf.multiply(hidden_state, not_last),
+                tf.multiply(carry_state, not_last),
+            ]
         return start_policy_state, end_policy_state
 
     #
