@@ -7,7 +7,7 @@ from tf_agents.policies import random_tf_policy
 
 from env import OhmniInSpace
 from agent import network
-from buffer import reb, per
+from buffer import per
 from criterion import ExpectedReturn
 
 # Trick
