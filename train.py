@@ -57,6 +57,7 @@ loss = 0
 while agent.get_step() <= num_iterations:
     replay_buffer.collect_steps(train_env, agent)
     experience, info = next(iterator)
+    print(experience)
     key, probability, table_size, priority = info
     mean_loss, batch_loss = agent.train(experience)
     new_priority = tf.multiply(

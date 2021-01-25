@@ -88,6 +88,7 @@ class Network():
     def _policy(self):
         # Define I/O
         image_shape = self.observation_spec.shape
+        state_shape = self.policy_state_spec.shape
         # Define network
         inputs = keras.layers.Input(shape=image_shape)
         cnn = keras.Sequential([  # (96, 96, *)
@@ -103,8 +104,8 @@ class Network():
             keras.layers.Flatten(),
             keras.layers.Dense(1024, activation='relu'),
         ])
-        init_state = keras.layers.Input(shape=(768,))
-        rnn = keras.layers.GRU(768, return_state=True, name='feedback')
+        init_state = keras.layers.Input(shape=state_shape)
+        rnn = keras.layers.GRU(state_shape[0], return_state=True, name='feedback')
         head = keras.Sequential([
             keras.layers.Dense(self._num_of_actions * self._num_of_atoms),
             keras.layers.Reshape((self._num_of_actions, self._num_of_atoms)),
