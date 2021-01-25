@@ -58,11 +58,20 @@ while agent.get_step() <= num_iterations:
     replay_buffer.collect_steps(train_env, agent)
     experience, info = next(iterator)
     key, probability, table_size, priority = info
-    print(priority)
+
+    # Debug
+    _priority, _ = tf.split(
+        priority,
+        num_or_size_splits=[1, agent.get_n_steps() - 1],
+        axis=-1
+    )
+    _priority = tf.squeeze(_priority)
+    print(_priority)
+
     mean_loss, batch_loss = agent.train(experience)
     new_priority = tf.multiply(
         tf.ones(priority.shape, dtype=tf.float32),
-        tf.expand_dims(batch_loss/agent.get_n_steps(), axis=-1))
+        tf.expand_dims(batch_loss / agent.get_n_steps(), axis=-1))
     key = tf.reshape(key, shape=[-1]).numpy()
     new_priority = tf.reshape(new_priority, shape=[-1]).numpy()
     updates = {}
