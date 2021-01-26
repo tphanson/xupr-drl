@@ -179,7 +179,7 @@ class Network():
     # Distributional Learning
     #
 
-    # @tf.function
+    @tf.function
     def _align(self, x, q):
         # Fundamental computation
         clipped_x = tf.minimum(tf.maximum(
@@ -236,7 +236,7 @@ class Network():
             (batch_size, self.rnn_units), dtype=tf.float32)
         return [hidden_states, carry_states]
 
-    # @tf.function
+    @tf.function
     def _hidden_states(self, experiences):
         not_lasts = tf.split(
             tf.cast(
