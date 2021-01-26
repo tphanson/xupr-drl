@@ -28,7 +28,7 @@ We use [OhmniInSpacev0](https://github.com/tphanson/tf-agent-labs/tree/c51)
 
 ## Unsorted Refs
 
-[1] file:///home/tups/Downloads/Navigation_in_Unknown_Dynamic_Environments_Based_o.pdf
+[1] https://www.researchgate.net/publication/335659932_Navigation_in_Unknown_Dynamic_Environments_Based_on_Deep_Reinforcement_Learning
 
 [2] http://ras.papercept.net/images/temp/IROS/files/0386.pdf
 
