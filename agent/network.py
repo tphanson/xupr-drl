@@ -91,12 +91,15 @@ class Network():
         )
 
     def _policy(self):
-        # Define I/O
+        # Get shapes
         image_shape = self.observation_spec.shape
         hidden_state_shape = self.policy_state_spec[0].shape
         carry_state_shape = self.policy_state_spec[1].shape
-        # Define network
+        # Define inputs
         inputs = keras.layers.Input(shape=image_shape)
+        init_hidden_state = keras.layers.Input(shape=hidden_state_shape)
+        init_carry_state = keras.layers.Input(shape=carry_state_shape)
+        # Define network
         cnn = keras.Sequential([  # (96, 96, *)
             keras.layers.Conv2D(  # (92, 92, *)
                 filters=32, kernel_size=(5, 5), strides=(1, 1), activation='relu'),
@@ -110,8 +113,6 @@ class Network():
             keras.layers.Flatten(),
             keras.layers.Dense(1024, activation='relu'),
         ])
-        init_hidden_state = keras.layers.Input(shape=hidden_state_shape)
-        init_carry_state = keras.layers.Input(shape=carry_state_shape)
         rnn = keras.layers.LSTM(
             self.rnn_units, return_state=True, name='feedback')
         v_head = keras.Sequential([
@@ -130,7 +131,8 @@ class Network():
             x, initial_state=[init_hidden_state, init_carry_state])
         a = a_head(x)
         v = v_head(x)
-        x = v + a - tf.reduce_mean(a, axis=1)
+        x = tf.expand_dims(v, axis=1) + a - \
+            tf.reduce_mean(a, axis=1, keepdims=True)
         x = head(x)
         # Return model
         return keras.Model(
