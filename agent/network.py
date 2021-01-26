@@ -114,16 +114,23 @@ class Network():
         init_carry_state = keras.layers.Input(shape=carry_state_shape)
         rnn = keras.layers.LSTM(
             self.rnn_units, return_state=True, name='feedback')
-        head = keras.Sequential([
+        v_head = keras.Sequential([
+            keras.layers.Dense(256),
+            keras.layers.Dense(self._num_of_atoms),
+        ])
+        a_head = keras.Sequential([
             keras.layers.Dense(self._num_of_actions * self._num_of_atoms),
             keras.layers.Reshape((self._num_of_actions, self._num_of_atoms)),
-            keras.layers.Softmax(),
         ])
+        head = keras.layers.Softmax()
         # Flow data
         x = cnn(inputs)
         x = tf.expand_dims(x, axis=1)
         x, h_state, c_state = rnn(
             x, initial_state=[init_hidden_state, init_carry_state])
+        a = a_head(x)
+        v = v_head(x)
+        x = v + a - tf.reduce_mean(a, axis=1)
         x = head(x)
         # Return model
         return keras.Model(
@@ -142,6 +149,7 @@ class Network():
     # Multi-steps Learning
     #
 
+    @tf.function
     def _expected_return(self, step_types, rewards):
         (batch_size, _) = step_types.shape
         not_last = tf.reverse(tf.transpose(tf.stack(
