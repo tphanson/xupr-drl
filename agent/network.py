@@ -113,8 +113,7 @@ class Network():
             keras.layers.Flatten(),
             keras.layers.Dense(1024, activation='relu'),
         ])
-        rnn = keras.layers.LSTM(
-            self.rnn_units, return_state=True, name='feedback')
+        rnn = keras.layers.LSTM(self.rnn_units, return_state=True)
         v_head = keras.Sequential([
             keras.layers.Dense(256),
             keras.layers.Dense(self._num_of_atoms),
@@ -234,10 +233,6 @@ class Network():
     #
     # Recurrent Q-Learning
     #
-
-    def reset_states(self):
-        feedback = self.target_policy.get_layer(name='feedback')
-        feedback.reset_states()
 
     def get_initial_state(self, batch_size=1):
         hidden_states = tf.zeros(
