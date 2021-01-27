@@ -11,7 +11,7 @@ CHECKPOINT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 
 class Network():
-    def __init__(self, time_step_spec, observation_spec, action_spec):
+    def __init__(self, time_step_spec, observation_spec, action_spec, training=False):
         # Network params
         self.rnn_units = 768
         # Specs
@@ -24,7 +24,7 @@ class Network():
         ]
         self.data_spec = self._data_spec()
         # Training params
-        self.epsilon = 0.9
+        self.epsilon = 0.9 if training else 1.
         self.gamma = 0.9
         self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
         self._callback_period = 2000

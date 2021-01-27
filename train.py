@@ -24,6 +24,7 @@ agent = network.Network(
     time_step_spec=train_env.time_step_spec(),
     observation_spec=train_env.observation_spec(),
     action_spec=train_env.action_spec(),
+    training=True
 )
 
 # Metrics and Evaluation

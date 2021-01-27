@@ -11,6 +11,7 @@ agent = network.Network(
     time_step_spec=env.time_step_spec(),
     observation_spec=env.observation_spec(),
     action_spec=env.action_spec(),
+    training=False
 )
 
 counter = 0

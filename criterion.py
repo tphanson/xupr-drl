@@ -20,6 +20,7 @@ class EvalActor(object):
             time_step_spec=self.env.time_step_spec(),
             observation_spec=self.env.observation_spec(),
             action_spec=self.env.action_spec(),
+            training=False
         )
 
     def eval(self):
