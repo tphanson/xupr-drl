@@ -1,5 +1,4 @@
 import reverb
-import tensorflow as tf
 from tf_agents.replay_buffers import reverb_replay_buffer, reverb_utils
 from tf_agents.trajectories import trajectory, time_step, policy_step
 
@@ -34,7 +33,6 @@ class PrioritizedExperienceRelay:
             stride_length=1,
             priority=1,
         )
-        self.states = None
 
     def __len__(self):
         return self.buffer.num_frames()
@@ -50,7 +48,7 @@ class PrioritizedExperienceRelay:
             ps = policy_step.PolicyStep(
                 policy_steps.action[i],
                 policy_steps.state[i],
-                (),
+                policy_steps.info[i],
             )
             nts = time_step.TimeStep(
                 next_time_steps.step_type[i],
@@ -74,22 +72,11 @@ class PrioritizedExperienceRelay:
         self.buffer.py_client.mutate_priorities(self.name, updates)
 
     def collect(self, env, policy):
-        if self.states is None:
-            self.states = policy.get_initial_state(batch_size=self.batch_size)
         time_steps = env.current_time_step()
-        policy_steps = policy.action(time_steps, self.states)
-        actions, policy_states, _ = policy_steps
+        policy_steps = policy.action(time_steps)
+        actions, _, _ = policy_steps
         next_time_steps = env.step(actions)
         self._add_batch(time_steps, policy_steps, next_time_steps)
-        # Reset states
-        not_lasts = tf.cast(
-            tf.less(time_steps.step_type, time_step.StepType.LAST),
-            dtype=tf.float32
-        )
-        [hidden_states, carry_states] = policy_states
-        hidden_states = tf.multiply(hidden_states, not_lasts)
-        carry_states = tf.multiply(carry_states, not_lasts)
-        self.states = [hidden_states, carry_states]
 
     def collect_steps(self, env, policy, steps=1):
         for _ in range(steps):

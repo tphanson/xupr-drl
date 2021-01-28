@@ -1,28 +1,24 @@
 import tensorflow as tf
 
 
-def parse_experiences(experiences, prev_n_steps, n_steps):
-    _, step_types = tf.split(
-        experiences.step_type,
-        num_or_size_splits=[prev_n_steps, n_steps],
-        axis=1
-    )
-    _, start_state, _, end_state = tf.split(
+def parse_experiences(experiences, n_steps):
+    step_types = experiences.step_type
+    state, _, next_state = tf.split(
         experiences.observation,
-        num_or_size_splits=[prev_n_steps, 1, n_steps - 2, 1],
+        num_or_size_splits=[1, n_steps - 2, 1],
         axis=1
     )
-    _, action, _ = tf.split(
+    action, _ = tf.split(
         experiences.action,
-        num_or_size_splits=[prev_n_steps, 1, n_steps - 1],
+        num_or_size_splits=[1, n_steps - 1],
         axis=1
     )
-    _, rewards, _ = tf.split(
+    rewards, _ = tf.split(
         experiences.reward,
-        num_or_size_splits=[prev_n_steps, n_steps - 1, 1],
+        num_or_size_splits=[n_steps - 1, 1],
         axis=1
     )
-    return step_types, tf.squeeze(start_state), action, rewards, tf.squeeze(end_state)
+    return step_types, tf.squeeze(state), action, rewards, tf.squeeze(next_state)
 
 
 def build_mask(batch_size, num_of_atoms):

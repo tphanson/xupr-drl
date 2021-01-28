@@ -12,16 +12,10 @@ CHECKPOINT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 class Network():
     def __init__(self, time_step_spec, observation_spec, action_spec, training=False):
-        # Network params
-        self.rnn_units = 768
         # Specs
         self.time_step_spec = time_step_spec
         self.observation_spec = observation_spec
         self.action_spec = action_spec
-        self.policy_state_spec = [
-            tf.TensorSpec((self.rnn_units,), dtype=tf.float32),
-            tf.TensorSpec((self.rnn_units,), dtype=tf.float32),
-        ]
         self.data_spec = self._data_spec()
         # Training params
         self.epsilon = 0.9 if training else 1.
@@ -59,8 +53,6 @@ class Network():
         self._update_target_policy()
         # Multi-steps Learning
         self._n_steps = 5
-        # Recurrent Q-Learning
-        self._pre_n_steps = 25
 
     #
     # Common functions
@@ -73,7 +65,7 @@ class Network():
         return int(self.step.numpy())
 
     def get_n_steps(self):
-        return self._pre_n_steps + self._n_steps
+        return self._n_steps
 
     #
     # Deep Q-Learning
@@ -82,23 +74,15 @@ class Network():
     def _data_spec(self):
         return trajectory.from_transition(
             self.time_step_spec,
-            policy_step.PolicyStep(
-                action=self.action_spec,
-                state=self.policy_state_spec,
-                info=()
-            ),
+            policy_step.PolicyStep(action=self.action_spec, state=(), info=()),
             self.time_step_spec,
         )
 
     def _policy(self):
         # Get shapes
         image_shape = self.observation_spec.shape
-        hidden_state_shape = self.policy_state_spec[0].shape
-        carry_state_shape = self.policy_state_spec[1].shape
         # Define inputs
         inputs = keras.layers.Input(shape=image_shape)
-        init_hidden_state = keras.layers.Input(shape=hidden_state_shape)
-        init_carry_state = keras.layers.Input(shape=carry_state_shape)
         # Define network
         cnn = keras.Sequential([  # (96, 96, *)
             keras.layers.Conv2D(  # (92, 92, *)
@@ -113,7 +97,6 @@ class Network():
             keras.layers.Flatten(),
             keras.layers.Dense(768, activation='relu'),
         ])
-        rnn = keras.layers.LSTM(self.rnn_units, return_state=True)
         v_head = keras.Sequential([
             keras.layers.Dense(512, activation='relu'),
             keras.layers.Dense(self._num_of_atoms),
@@ -127,18 +110,12 @@ class Network():
         head = keras.layers.Softmax()
         # Flow data
         x = cnn(inputs)
-        x = tf.expand_dims(x, axis=1)
-        x, h_state, c_state = rnn(
-            x, initial_state=[init_hidden_state, init_carry_state])
         v = v_head(x)
         a = a_head(x)
         x = v + (a - tf.reduce_mean(a, axis=1, keepdims=True))
         x = head(x)
         # Return model
-        return keras.Model(
-            inputs=[inputs, [init_hidden_state, init_carry_state]],
-            outputs=[x, [h_state, c_state]]
-        )
+        return keras.Model(inputs=inputs, outputs=x)
 
     #
     # Double Q-Learning
@@ -199,7 +176,7 @@ class Network():
         b = (clipped_x - self._min_q_value) / delta_z
         l = tf.math.floor(b)
         u = tf.math.ceil(b)
-        # Create indices masks
+        # Create indice mask
         (batch_size, _) = x.shape
         mask_i = build_mask(batch_size, self._num_of_atoms)
         mask_l = tf.repeat(
@@ -232,61 +209,15 @@ class Network():
         return mu + ml
 
     #
-    # Recurrent Q-Learning
-    #
-
-    def get_initial_state(self, batch_size=1):
-        hidden_states = tf.zeros(
-            (batch_size, self.rnn_units), dtype=tf.float32)
-        carry_states = tf.zeros(
-            (batch_size, self.rnn_units), dtype=tf.float32)
-        return [hidden_states, carry_states]
-
-    @tf.function
-    def _hidden_states(self, experiences):
-        not_lasts = tf.split(
-            tf.cast(
-                tf.less(experiences.step_type, time_step.StepType.LAST),
-                dtype=tf.float32
-            ),
-            num_or_size_splits=self._pre_n_steps + self._n_steps,
-            axis=1
-        )
-        observations = tf.split(
-            experiences.observation,
-            num_or_size_splits=self._pre_n_steps + self._n_steps,
-            axis=1
-        )
-        start_policy_state = None
-        end_policy_state = None
-        state = None
-        for i, (not_last, observation) in enumerate(zip(not_lasts, observations)):
-            observation = tf.squeeze(observation, axis=1)
-            if i == 0:
-                batch_size, _, _, _ = observation.shape
-                state = self.get_initial_state(batch_size=batch_size)
-            if i == self._pre_n_steps - 1:
-                start_policy_state = state
-            if i == self._pre_n_steps + self._n_steps - 1:
-                end_policy_state = state
-            _, [hidden_state, carry_state] = self._greedy_action(
-                observation, state)
-            state = [
-                tf.multiply(hidden_state, not_last),
-                tf.multiply(carry_state, not_last),
-            ]
-        return start_policy_state, end_policy_state
-
-    #
     # Predict
     #
 
-    def _greedy_action(self, observation, init_state):
-        distributions, state = self.policy((observation, init_state))
+    def _greedy_action(self, observation):
+        distributions = self.policy(observation)
         transposed_x = tf.reshape(self._supports, (self._num_of_atoms, 1))
         q_values = tf.matmul(distributions, transposed_x)
         actions = tf.argmax(q_values, axis=1, output_type=tf.int32)
-        return actions, state
+        return actions
 
     def _explore(self, greedy_actions):
         exploring = tf.cast(tf.greater(
@@ -302,11 +233,11 @@ class Network():
         actions = exploring * random_actions + (1 - exploring) * greedy_actions
         return actions
 
-    def action(self, ts, state):
-        greedy_actions, state = self._greedy_action(ts.observation, state)
+    def action(self, ts):
+        greedy_actions = self._greedy_action(ts.observation)
         greedy_actions = tf.squeeze(greedy_actions, axis=-1)
         actions = self._explore(greedy_actions)
-        return policy_step.PolicyStep(action=actions, state=state, info=())
+        return policy_step.PolicyStep(action=actions, state=(), info=())
 
     #
     # Train
@@ -325,20 +256,17 @@ class Network():
     def _train_step(
         self,
         step_types,
-        start_state,
-        start_policy_state,
+        state,
         action,
         rewards,
-        end_state,
-        end_policy_state,
+        next_state,
     ):
         with tf.GradientTape() as tape:
-            z, _ = self.policy((start_state, start_policy_state))
+            z = self.policy(state)
             p = tf.gather_nd(z, action, batch_dims=1)
-            optiomal_actions, _ = self._greedy_action(
-                end_state, end_policy_state)
-            next_z, _ = self.target_policy((end_state, end_policy_state))
-            q = tf.gather_nd(next_z, optiomal_actions, batch_dims=1)
+            next_action = self._greedy_action(next_state)
+            next_z = self.target_policy(next_state)
+            q = tf.gather_nd(next_z, next_action, batch_dims=1)
             x = self._expected_return(step_types, rewards)
             m = self._align(x, q)
             loss, batch_loss = self._loss(p, m)
@@ -349,17 +277,14 @@ class Network():
 
     def train(self, experiences):
         self.step.assign_add(1)
-        start_policy_state, end_policy_state = self._hidden_states(experiences)
-        step_types, start_state, action, rewards, end_state = parse_experiences(
-            experiences, self._pre_n_steps, self._n_steps)
+        step_types, state, action, rewards, next_state = parse_experiences(
+            experiences, self._n_steps)
         loss, batch_loss = self._train_step(
             step_types,
-            start_state,
-            start_policy_state,
+            state,
             action,
             rewards,
-            end_state,
-            end_policy_state,
+            next_state,
         )
         if self.step % self._callback_period == 0:
             self._save_checkpoint()
