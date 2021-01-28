@@ -45,11 +45,7 @@ class PrioritizedExperienceRelay:
                 time_steps.discount[i],
                 time_steps.observation[i],
             )
-            ps = policy_step.PolicyStep(
-                policy_steps.action[i],
-                policy_steps.state[i],
-                policy_steps.info[i],
-            )
+            ps = policy_step.PolicyStep(policy_steps.action[i], (), ())
             nts = time_step.TimeStep(
                 next_time_steps.step_type[i],
                 next_time_steps.reward[i],
