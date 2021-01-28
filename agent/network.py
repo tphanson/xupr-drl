@@ -111,15 +111,16 @@ class Network():
                 filters=128, kernel_size=(3, 3), strides=(2, 2), activation='relu'),
             keras.layers.MaxPooling2D((2, 2)),  # (5, 5, *)
             keras.layers.Flatten(),
-            keras.layers.Dense(2048, activation='relu'),
+            keras.layers.Dense(768, activation='relu'),
         ])
         rnn = keras.layers.LSTM(self.rnn_units, return_state=True)
         v_head = keras.Sequential([
             keras.layers.Dense(512, activation='relu'),
             keras.layers.Dense(self._num_of_atoms),
+            keras.layers.Reshape((1, self._num_of_atoms)),
         ])
         a_head = keras.Sequential([
-            keras.layers.Dense(1536, activation='relu'),
+            keras.layers.Dense(768, activation='relu'),
             keras.layers.Dense(self._num_of_actions * self._num_of_atoms),
             keras.layers.Reshape((self._num_of_actions, self._num_of_atoms)),
         ])
@@ -129,10 +130,9 @@ class Network():
         x = tf.expand_dims(x, axis=1)
         x, h_state, c_state = rnn(
             x, initial_state=[init_hidden_state, init_carry_state])
-        a = a_head(x)
         v = v_head(x)
-        x = tf.expand_dims(v, axis=1) + a - \
-            tf.reduce_mean(a, axis=1, keepdims=True)
+        a = a_head(x)
+        x = v + (a - tf.reduce_mean(a, axis=1, keepdims=True))
         x = head(x)
         # Return model
         return keras.Model(
