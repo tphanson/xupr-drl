@@ -31,8 +31,8 @@ class Network():
         self.step = tf.Variable(initial_value=0, dtype=tf.int32, name='step')
         # Deep Q-Learning
         self._num_of_actions = self.action_spec.maximum - self.action_spec.minimum + 1
-        # Distributional Learning
-        self._num_of_atoms = 21
+        # Distributional Learning (C51)
+        self._num_of_atoms = 51
         self._min_q_value = -2.8
         self._max_q_value = 1
         self._supports = tf.linspace(
