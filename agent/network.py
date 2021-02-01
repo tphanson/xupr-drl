@@ -270,7 +270,7 @@ class Network():
             if i == self._pre_n_steps + self._n_steps - 1:
                 end_policy_state = state
             _, [hidden_state, carry_state] = self._greedy_action(
-                observation, state)
+                observation, state, self.target_policy)
             state = [
                 tf.multiply(hidden_state, not_last),
                 tf.multiply(carry_state, not_last),
@@ -281,8 +281,8 @@ class Network():
     # Predict
     #
 
-    def _greedy_action(self, observation, init_state):
-        distributions, state = self.policy((observation, init_state))
+    def _greedy_action(self, observation, init_state, policy):
+        distributions, state = policy((observation, init_state))
         transposed_x = tf.reshape(self._supports, (self._num_of_atoms, 1))
         q_values = tf.matmul(distributions, transposed_x)
         actions = tf.argmax(q_values, axis=1, output_type=tf.int32)
@@ -303,7 +303,8 @@ class Network():
         return actions
 
     def action(self, ts, state):
-        greedy_actions, state = self._greedy_action(ts.observation, state)
+        greedy_actions, state = self._greedy_action(
+            ts.observation, state, self.policy)
         greedy_actions = tf.squeeze(greedy_actions, axis=-1)
         actions = self._explore(greedy_actions)
         return policy_step.PolicyStep(action=actions, state=state, info=())
@@ -336,7 +337,7 @@ class Network():
             z, _ = self.policy((start_state, start_policy_state))
             p = tf.gather_nd(z, action, batch_dims=1)
             optiomal_actions, _ = self._greedy_action(
-                end_state, end_policy_state)
+                end_state, end_policy_state, self.policy)
             next_z, _ = self.target_policy((end_state, end_policy_state))
             q = tf.gather_nd(next_z, optiomal_actions, batch_dims=1)
             x = self._expected_return(step_types, rewards)
