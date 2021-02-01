@@ -257,7 +257,7 @@ class PyEnv(py_environment.PyEnvironment):
         _, mask = self._get_image_state()  # Image state
         pose, _ = self._get_pose_state()  # Pose state
         cent = np.array([w / 2, h / 2], dtype=np.float32)
-        dest = -pose * 64 + cent  # Transpose/Scale/Tranform
+        dest = -pose * 32 + cent  # Transpose/Scale/Tranform
         mask = cv.line(mask,
                        (int(cent[1]), int(cent[0])),
                        (int(dest[1]), int(dest[0])),
