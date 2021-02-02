@@ -258,10 +258,12 @@ class PyEnv(py_environment.PyEnvironment):
         pose, _ = self._get_pose_state()  # Pose state
         cent = np.array([w / 2, h / 2], dtype=np.float32)
         dest = -pose * 32 + cent  # Transpose/Scale/Tranform
+        _scale = self._fix_vanish_hyperparam + 0.05
+        color = (np.linalg.norm(pose) / 10) * (1 - 2 * _scale) + _scale
         mask = cv.line(mask,
                        (int(cent[1]), int(cent[0])),
                        (int(dest[1]), int(dest[0])),
-                       (0, 1, 0), thickness=3)
+                       (color, color, color), thickness=3)
         observation = cv.cvtColor(mask, cv.COLOR_RGB2GRAY)
         observation = np.reshape(observation, self.image_shape + (1,))
         # Set state
