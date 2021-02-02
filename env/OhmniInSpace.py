@@ -218,10 +218,10 @@ class PyEnv(py_environment.PyEnvironment):
         # Reaching the destination
         _, cosine_sim = self._get_pose_state()
         if self._is_finished():
-            return True, 1
+            return True, 10
         # Dead
         if self._is_fatal():
-            return True, -1
+            return True, -10
         # Colliding
         if self._is_collided():
             return False, -0.2

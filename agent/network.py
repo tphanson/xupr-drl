@@ -25,7 +25,7 @@ class Network():
         self.data_spec = self._data_spec()
         # Training params
         self.epsilon = 0.9 if training else 1.
-        self.gamma = 0.9
+        self.gamma = 0.99
         self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
         self._callback_period = 2000
         self.step = tf.Variable(initial_value=0, dtype=tf.int32, name='step')
@@ -33,8 +33,8 @@ class Network():
         self._num_of_actions = self.action_spec.maximum - self.action_spec.minimum + 1
         # Distributional Learning (C51)
         self._num_of_atoms = 51
-        self._min_q_value = -2.8
-        self._max_q_value = 1
+        self._min_q_value = -29.8
+        self._max_q_value = 10
         self._supports = tf.linspace(
             tf.constant(self._min_q_value, dtype=tf.float32),
             tf.constant(self._max_q_value, dtype=tf.float32),
