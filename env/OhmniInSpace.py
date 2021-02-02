@@ -261,7 +261,7 @@ class PyEnv(py_environment.PyEnvironment):
         mask = cv.line(mask,
                        (int(cent[1]), int(cent[0])),
                        (int(dest[1]), int(dest[0])),
-                       (0, 1, 0), thickness=3)
+                       (1, 1, 1), thickness=3)
         observation = cv.cvtColor(mask, cv.COLOR_RGB2GRAY)
         observation = np.reshape(observation, self.image_shape + (1,))
         # Set state
