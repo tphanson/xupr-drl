@@ -30,11 +30,11 @@ while counter < 10000:
     env.render()
 
     # Attention
-    # _, carry_state = state
-    # v = tf.squeeze(carry_state)
-    # mean, variance = tf.nn.moments(v, axes=[0])
-    # v = (v - mean) / tf.sqrt(variance)
-    # v = tf.reshape(v, [16, 16, 3])
-    # img = v.numpy()
-    # cv.imshow('Attention matrix', img)
-    # cv.waitKey(10)
+    _, carry_state = state
+    v = tf.squeeze(carry_state)
+    mean, variance = tf.nn.moments(v, axes=[0])
+    v = (v - mean) / tf.sqrt(variance)
+    v = tf.reshape(v, [16, 16, 3])
+    img = v.numpy()
+    cv.imshow('Attention matrix', img)
+    cv.waitKey(10)
