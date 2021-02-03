@@ -3,15 +3,8 @@ import numpy as np
 from random import random, choice
 
 
-def plane(clientId, texture=False, wall=False):
+def plane(clientId):
     planeId = p.loadURDF('plane.urdf', physicsClientId=clientId)
-    if texture:
-        textureId = p.loadTexture(
-            'env/model/texture/wood1.jpg', physicsClientId=clientId)
-        p.changeVisualShape(
-            planeId, -1, textureUniqueId=textureId, physicsClientId=clientId)
-    if wall:
-        p.loadURDF('samurai.urdf', physicsClientId=clientId)
     return planeId
 
 

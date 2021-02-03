@@ -35,3 +35,11 @@ We use [OhmniInSpacev0](https://github.com/tphanson/tf-agent-labs/tree/c51)
 [3] https://arxiv.org/pdf/2005.13857.pdf
 
 [4] https://arxiv.org/abs/1511.05952
+
+## Convenient commands
+
+```
+# Download model
+
+rm -rf ~/Desktop/xupr-drl/models/ && scp -P 14400 -r tuphan@192.168.123.58:/home/tuphan/xupr-drl/models ~/Desktop/xupr-drl/
+```

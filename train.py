@@ -10,12 +10,6 @@ from agent import network
 from buffer import per
 from criterion import ExpectedReturn
 
-# Trick
-# No GPU: my super-extra-fast-and-furiuos-ahuhu machine
-# GPUs: training servers
-# LOCAL = not len(tf.config.list_physical_devices('GPU')) > 0
-
-
 # Environment
 train_env = OhmniInSpace.env()
 

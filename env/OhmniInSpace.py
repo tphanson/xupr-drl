@@ -40,10 +40,10 @@ class Env:
         """
         # Init server
         client_id = p.connect(p.GUI if self.gui else p.DIRECT)
-        p.setAdditionalSearchPath(
-            pybullet_data.getDataPath(), physicsClientId=client_id)
+        p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setTimeStep(self.timestep, physicsClientId=client_id)
-        p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
+        p.configureDebugVisualizer(
+            p.COV_ENABLE_GUI, 0, physicsClientId=client_id)
         # Return
         return client_id
 
@@ -66,7 +66,7 @@ class Env:
         # Add gravity
         p.setGravity(0, 0, -10, physicsClientId=self.client_id)
         # Add plane and ohmni
-        plane(self.client_id, texture=False, wall=False)
+        plane(self.client_id)
         ohmni_id, _capture_image = ohmni(self.client_id)
         # Add obstacles at random positions
         for _ in range(self.num_of_obstacles):
