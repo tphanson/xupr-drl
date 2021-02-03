@@ -1,5 +1,7 @@
 import os
 import tensorflow as tf
+from mpl_toolkits import mplot3d
+import matplotlib.pyplot as plt
 from tensorflow import keras
 from tf_agents.trajectories import policy_step, trajectory, time_step
 
@@ -8,6 +10,10 @@ from helper.utils import parse_experiences, build_mask
 # Saving dir
 CHECKPOINT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                               '../models/checkpoints')
+fig = plt.figure()
+ax = plt.axes(projection='3d')
+plt.ion()
+plt.show()
 
 
 class Network():
@@ -283,6 +289,18 @@ class Network():
 
     def _greedy_action(self, observation, init_state, policy):
         distributions, state = policy((observation, init_state))
+
+        Z = tf.reshape(distributions[0],
+                       (self._num_of_actions * self._num_of_atoms,))
+        Y = tf.concat([[i for _ in range(self._num_of_atoms)]
+                       for i in range(self._num_of_actions)], axis=0)
+        X = tf.concat(
+            [self._supports for _ in range(self._num_of_actions)], axis=0)
+        plt.gca().cla()
+        ax.plot3D(X, Y, Z, 'gray')
+        plt.draw()
+        plt.pause(0.1)
+
         transposed_x = tf.reshape(self._supports, (self._num_of_atoms, 1))
         q_values = tf.matmul(distributions, transposed_x)
         actions = tf.argmax(q_values, axis=1, output_type=tf.int32)
