@@ -7,5 +7,5 @@ for i in range(500):
 for i in range(500):
     negative_reward = gamma * negative_reward - 0.2
 
-print('positive_reward', positive_reward) # -1.999999999999999
-print('negative_reward', negative_reward) # -1.999999999999999
+print('positive_reward', positive_reward)
+print('negative_reward', negative_reward)
