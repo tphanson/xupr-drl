@@ -1,14 +1,11 @@
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
 import time
 import tensorflow as tf
 from tf_agents.policies import random_tf_policy
-
-from env import OhmniInSpace
 from agent import network
 from buffer import per
+from env import OhmniInSpace
 from criterion import ExpectedReturn
+
 
 # Environment
 train_env = OhmniInSpace.env()

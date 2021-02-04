@@ -60,7 +60,7 @@ class Network():
         # Multi-steps Learning
         self._n_steps = 5
         # Recurrent Q-Learning
-        self._pre_n_steps = 25
+        self._pre_n_steps = 95
 
     #
     # Common functions
@@ -158,21 +158,21 @@ class Network():
             [tf.reduce_prod(tf.split(
                 tf.cast(
                     tf.less(step_types, time_step.StepType.LAST),
-                    dtype=tf.float32
+                    tf.float32
                 ),
-                num_or_size_splits=[self._n_steps - 1 - i, i + 1],
+                [self._n_steps - 1 - i, i + 1],
                 axis=-1
             )[0], axis=-1) for i in range(self._n_steps)]
         )), axis=[-1])
         prev_states_not_last, end_state_not_last = tf.split(
             not_last,
-            num_or_size_splits=[self._n_steps - 1, 1],
+            [self._n_steps - 1, 1],
             axis=-1
         )
         prev_states_discount, last_state_discount = tf.split(
             tf.stack(
                 [[self.gamma**i for i in range(self._n_steps)] for _ in range(batch_size)]),
-            num_or_size_splits=[self._n_steps - 1, 1],
+            [self._n_steps - 1, 1],
             axis=-1
         )
         supports_batch = tf.stack(
@@ -213,8 +213,8 @@ class Network():
             axis=1
         )
         # Compare to get boolean (active nodes)
-        bool_l = tf.cast(tf.equal(mask_i, mask_l), dtype=tf.float32)
-        bool_u = tf.cast(tf.equal(mask_i, mask_u), dtype=tf.float32)
+        bool_l = tf.cast(tf.equal(mask_i, mask_l), tf.float32)
+        bool_u = tf.cast(tf.equal(mask_i, mask_u), tf.float32)
         # Compute ml, mu at active nodes
         _ml = tf.repeat(
             tf.expand_dims(q * (u - b), axis=1),
@@ -247,14 +247,14 @@ class Network():
         not_lasts = tf.split(
             tf.cast(
                 tf.less(experiences.step_type, time_step.StepType.LAST),
-                dtype=tf.float32
+                tf.float32
             ),
-            num_or_size_splits=self._pre_n_steps + self._n_steps,
+            self._pre_n_steps + self._n_steps,
             axis=1
         )
         observations = tf.split(
             experiences.observation,
-            num_or_size_splits=self._pre_n_steps + self._n_steps,
+            self._pre_n_steps + self._n_steps,
             axis=1
         )
         start_policy_state = None
@@ -292,7 +292,7 @@ class Network():
         exploring = tf.cast(tf.greater(
             tf.random.uniform(greedy_actions.shape, minval=0, maxval=1),
             tf.fill(greedy_actions.shape, self.epsilon),
-        ), dtype=tf.int32)
+        ), tf.int32)
         random_actions = tf.random.uniform(
             greedy_actions.shape,
             minval=self.action_spec.minimum,

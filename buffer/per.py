@@ -84,7 +84,7 @@ class PrioritizedExperienceRelay:
         # Reset states
         not_lasts = tf.cast(
             tf.less(time_steps.step_type, time_step.StepType.LAST),
-            dtype=tf.float32
+            tf.float32
         )
         [hidden_states, carry_states] = policy_states
         hidden_states = tf.multiply(hidden_states, not_lasts)
