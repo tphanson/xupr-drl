@@ -280,7 +280,8 @@ class Network():
     #
     # Predict
     #
-
+    
+    @tf.function
     def _greedy_action(self, observation, init_state, policy):
         distributions, state = policy((observation, init_state))
         transposed_x = tf.reshape(self._supports, (self._num_of_atoms, 1))
@@ -288,6 +289,7 @@ class Network():
         actions = tf.argmax(q_values, axis=1, output_type=tf.int32)
         return actions, state
 
+    @tf.function
     def _explore(self, greedy_actions):
         exploring = tf.cast(tf.greater(
             tf.random.uniform(greedy_actions.shape, minval=0, maxval=1),
@@ -348,7 +350,6 @@ class Network():
         self.optimizer.apply_gradients(zip(gradients, variables))
         return loss, batch_loss
 
-    @tf.function
     def train(self, experiences):
         self.step.assign_add(1)
         start_policy_state, end_policy_state = self._hidden_states(experiences)
