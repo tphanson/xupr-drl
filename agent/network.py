@@ -60,7 +60,7 @@ class Network():
         # Multi-steps Learning
         self._n_steps = 5
         # Recurrent Q-Learning
-        self._pre_n_steps = 95
+        self._pre_n_steps = 75
 
     #
     # Common functions
