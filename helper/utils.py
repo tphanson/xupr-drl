@@ -1,9 +1,6 @@
 import tensorflow as tf
 
 
-CACHE = {}
-
-
 def parse_experiences(experiences, prev_n_steps, n_steps):
     _, step_types = tf.split(
         experiences.step_type,
@@ -29,16 +26,10 @@ def parse_experiences(experiences, prev_n_steps, n_steps):
 
 
 def build_mask(batch_size, num_of_atoms):
-    key = str(batch_size)+str(num_of_atoms)
-    try:
-        mask = CACHE[key]
-    except KeyError:
-        mask = tf.constant([
+    return tf.constant([
+        [
             [
-                [
-                    i for _ in range(num_of_atoms)
-                ] for i in range(num_of_atoms)
-            ] for _ in range(batch_size)
-        ], dtype=tf.float32)
-        CACHE[key] = mask
-    return mask
+                i for _ in range(num_of_atoms)
+            ] for i in range(num_of_atoms)
+        ] for _ in range(batch_size)
+    ], dtype=tf.float32)
