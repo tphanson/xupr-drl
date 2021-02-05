@@ -19,7 +19,7 @@ class Env:
     def __init__(self, gui=False, num_of_obstacles=20, dst_rad=3, image_shape=(96, 96)):
         # Env constants
         self.gui = gui
-        self.timestep = 0.05
+        self.timestep = 0.1
         self._left_wheel_id = 0
         self._right_wheel_id = 1
         # Env specs
