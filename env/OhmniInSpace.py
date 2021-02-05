@@ -48,11 +48,9 @@ class Env:
         return client_id
 
     def _randomize_destination(self):
-        x = random() * self.dst_rad
-        x_signed = -1 if random() > 0.5 else 1
-        y = random() * self.dst_rad
-        y_signed = -1 if random() > 0.5 else 1
-        destination = np.array([x * x_signed, y * y_signed], dtype=np.float32)
+        x = random() * self.dst_rad * (-1 if random() > 0.5 else 1)
+        y = random() * self.dst_rad * (-1 if random() > 0.5 else 1)
+        destination = np.array([x, y], dtype=np.float32)
         p.addUserDebugLine(
             np.append(destination, 0.),  # From
             np.append(destination, 3.),  # To
@@ -70,15 +68,15 @@ class Env:
         ohmni_id, _capture_image = ohmni(self.client_id)
         # Add obstacles at random positions
         for _ in range(self.num_of_obstacles):
-            obstacle(self.client_id)
+            obstacle(self.client_id, avoids=[[0, 0], self.destination])
         # Return
         return ohmni_id, _capture_image
 
     def _reset(self):
         """ Remove all objects, then rebuild them """
         p.resetSimulation(physicsClientId=self.client_id)
-        self.ohmni_id, self._capture_image = self._build()
         self.destination = self._randomize_destination()
+        self.ohmni_id, self._capture_image = self._build()
 
     def capture_image(self):
         """ Get image from navigation camera """
@@ -125,7 +123,7 @@ class PyEnv(py_environment.PyEnvironment):
         self.max_steps = 500
         self._fix_vanish_hyperparam = 0.15
         self._num_of_obstacles = 10
-        self._dst_rad = 3
+        self._dst_rad = 5
         # Actions
         self._num_values = 5
         self._values = np.linspace(-1, 1, self._num_values)
