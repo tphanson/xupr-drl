@@ -4,7 +4,6 @@ import tensorflow as tf
 CACHE = {}
 
 
-@tf.function
 def parse_experiences(experiences, prev_n_steps, n_steps):
     _, step_types = tf.split(
         experiences.step_type,
