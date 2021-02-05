@@ -348,6 +348,7 @@ class Network():
         self.optimizer.apply_gradients(zip(gradients, variables))
         return loss, batch_loss
 
+    @tf.function
     def train(self, experiences):
         self.step.assign_add(1)
         start_policy_state, end_policy_state = self._hidden_states(experiences)
