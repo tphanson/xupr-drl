@@ -42,7 +42,7 @@ dataset = replay_buffer.as_dataset()
 iterator = iter(dataset)
 
 # Train
-num_iterations = 2000000
+num_iterations = 4000000
 eval_step = agent.get_callback_period()
 start = time.time()
 loss = 0

@@ -151,6 +151,7 @@ class Network():
     # Multi-steps Learning
     #
 
+    @tf.function
     def _expected_return(self, step_types, rewards):
         (batch_size, _) = step_types.shape
         not_last = tf.reverse(tf.transpose(tf.stack(
@@ -188,6 +189,7 @@ class Network():
     # Distributional Learning
     #
 
+    @tf.function
     def _align(self, x, q):
         # Fundamental computation
         clipped_x = tf.minimum(tf.maximum(
@@ -240,6 +242,7 @@ class Network():
             (batch_size, self.rnn_units), dtype=tf.float32)
         return [hidden_states, carry_states]
 
+    @tf.function
     def _hidden_states(self, experiences):
         not_lasts = tf.split(
             tf.cast(
@@ -278,6 +281,7 @@ class Network():
     # Predict
     #
     
+    @tf.function
     def _greedy_action(self, observation, init_state, policy):
         distributions, state = policy((observation, init_state))
         transposed_x = tf.reshape(self._supports, (self._num_of_atoms, 1))
@@ -285,6 +289,7 @@ class Network():
         actions = tf.argmax(q_values, axis=1, output_type=tf.int32)
         return actions, state
 
+    @tf.function
     def _explore(self, greedy_actions):
         exploring = tf.cast(tf.greater(
             tf.random.uniform(greedy_actions.shape, minval=0, maxval=1),
