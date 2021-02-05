@@ -12,7 +12,7 @@ from tf_agents.trajectories import time_step as ts
 
 from env.objs import plane, ohmni, obstacle
 
-VELOCITY_COEFFICIENT = 15
+VELOCITY_COEFFICIENT = 10
 
 
 class Env:
