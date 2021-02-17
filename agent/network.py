@@ -33,7 +33,7 @@ class Network():
         self._num_of_actions = self.action_spec.maximum - self.action_spec.minimum + 1
         # Distributional Learning (C51)
         self._num_of_atoms = 51
-        self._min_q_value = -29.8
+        self._min_q_value = -20
         self._max_q_value = 10
         self._supports = tf.linspace(
             tf.constant(self._min_q_value, dtype=tf.float32),
@@ -280,7 +280,7 @@ class Network():
     #
     # Predict
     #
-    
+
     @tf.function
     def _greedy_action(self, observation, init_state, policy):
         distributions, state = policy((observation, init_state))
