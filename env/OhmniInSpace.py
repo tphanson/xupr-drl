@@ -122,7 +122,7 @@ class PyEnv(py_environment.PyEnvironment):
         self.input_shape = self.image_shape + (3,)
         self.max_steps = 500
         self._fix_vanish_hyperparam = 0.15
-        self._num_of_obstacles = 10
+        self._num_of_obstacles = 25
         self._dst_rad = 5
         # Actions
         self._num_values = 5
