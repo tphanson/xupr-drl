@@ -1,19 +1,10 @@
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
 import time
 import tensorflow as tf
 from tf_agents.policies import random_tf_policy
-
-from env import OhmniInSpace
 from agent import network
 from buffer import per
+from env import OhmniInSpace
 from criterion import ExpectedReturn
-
-# Trick
-# No GPU: my super-extra-fast-and-furiuos-ahuhu machine
-# GPUs: training servers
-# LOCAL = not len(tf.config.list_physical_devices('GPU')) > 0
 
 
 # Environment
@@ -31,7 +22,7 @@ agent = network.Network(
 ER = ExpectedReturn()
 
 # Replay buffer
-initial_collect_steps = 2000
+initial_collect_steps = 10000
 replay_buffer = per.PrioritizedExperienceRelay(
     agent.data_spec,
     n_steps=agent.get_n_steps(),
@@ -50,7 +41,7 @@ dataset = replay_buffer.as_dataset()
 iterator = iter(dataset)
 
 # Train
-num_iterations = 2000000
+num_iterations = 4000000
 eval_step = agent.get_callback_period()
 start = time.time()
 loss = 0

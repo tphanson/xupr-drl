@@ -19,7 +19,7 @@ class Network():
         self.data_spec = self._data_spec()
         # Training params
         self.epsilon = 0.9 if training else 1.
-        self.gamma = 0.9
+        self.gamma = 0.99
         self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
         self._callback_period = 2000
         self.step = tf.Variable(initial_value=0, dtype=tf.int32, name='step')
@@ -27,8 +27,8 @@ class Network():
         self._num_of_actions = self.action_spec.maximum - self.action_spec.minimum + 1
         # Distributional Learning (C51)
         self._num_of_atoms = 51
-        self._min_q_value = -3
-        self._max_q_value = 1
+        self._min_q_value = -20
+        self._max_q_value = 10
         self._supports = tf.linspace(
             tf.constant(self._min_q_value, dtype=tf.float32),
             tf.constant(self._max_q_value, dtype=tf.float32),
@@ -95,7 +95,7 @@ class Network():
                 filters=128, kernel_size=(3, 3), strides=(2, 2), activation='relu'),
             keras.layers.MaxPooling2D((2, 2)),  # (5, 5, *)
             keras.layers.Flatten(),
-            keras.layers.Dense(768, activation='relu'),
+            keras.layers.Dense(1024, activation='relu'),
         ])
         v_head = keras.Sequential([
             keras.layers.Dense(512, activation='relu'),
@@ -103,7 +103,7 @@ class Network():
             keras.layers.Reshape((1, self._num_of_atoms)),
         ])
         a_head = keras.Sequential([
-            keras.layers.Dense(768, activation='relu'),
+            keras.layers.Dense(1024, activation='relu'),
             keras.layers.Dense(self._num_of_actions * self._num_of_atoms),
             keras.layers.Reshape((self._num_of_actions, self._num_of_atoms)),
         ])
@@ -135,21 +135,21 @@ class Network():
             [tf.reduce_prod(tf.split(
                 tf.cast(
                     tf.less(step_types, time_step.StepType.LAST),
-                    dtype=tf.float32
+                    tf.float32
                 ),
-                num_or_size_splits=[self._n_steps - 1 - i, i + 1],
+                [self._n_steps - 1 - i, i + 1],
                 axis=-1
             )[0], axis=-1) for i in range(self._n_steps)]
         )), axis=[-1])
         prev_states_not_last, end_state_not_last = tf.split(
             not_last,
-            num_or_size_splits=[self._n_steps - 1, 1],
+            [self._n_steps - 1, 1],
             axis=-1
         )
         prev_states_discount, last_state_discount = tf.split(
             tf.stack(
                 [[self.gamma**i for i in range(self._n_steps)] for _ in range(batch_size)]),
-            num_or_size_splits=[self._n_steps - 1, 1],
+            [self._n_steps - 1, 1],
             axis=-1
         )
         supports_batch = tf.stack(
@@ -190,8 +190,8 @@ class Network():
             axis=1
         )
         # Compare to get boolean (active nodes)
-        bool_l = tf.cast(tf.equal(mask_i, mask_l), dtype=tf.float32)
-        bool_u = tf.cast(tf.equal(mask_i, mask_u), dtype=tf.float32)
+        bool_l = tf.cast(tf.equal(mask_i, mask_l), tf.float32)
+        bool_u = tf.cast(tf.equal(mask_i, mask_u), tf.float32)
         # Compute ml, mu at active nodes
         _ml = tf.repeat(
             tf.expand_dims(q * (u - b), axis=1),
@@ -219,11 +219,12 @@ class Network():
         actions = tf.argmax(q_values, axis=1, output_type=tf.int32)
         return actions
 
+    @tf.function
     def _explore(self, greedy_actions):
         exploring = tf.cast(tf.greater(
             tf.random.uniform(greedy_actions.shape, minval=0, maxval=1),
             tf.fill(greedy_actions.shape, self.epsilon),
-        ), dtype=tf.int32)
+        ), tf.int32)
         random_actions = tf.random.uniform(
             greedy_actions.shape,
             minval=self.action_spec.minimum,

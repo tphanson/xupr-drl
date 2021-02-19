@@ -12,9 +12,7 @@ agent = network.Network(
     training=False
 )
 
-counter = 0
-while counter < 10000:
-    counter += 1
+while True:
     time_step = env.current_time_step()
     policy_step = agent.action(time_step)
     action, _, _ = policy_step

@@ -12,14 +12,14 @@ from tf_agents.trajectories import time_step as ts
 
 from env.objs import plane, ohmni, obstacle
 
-VELOCITY_COEFFICIENT = 15
+VELOCITY_COEFFICIENT = 10
 
 
 class Env:
     def __init__(self, gui=False, num_of_obstacles=20, dst_rad=3, image_shape=(96, 96)):
         # Env constants
         self.gui = gui
-        self.timestep = 0.05
+        self.timestep = 0.1
         self._left_wheel_id = 0
         self._right_wheel_id = 1
         # Env specs
@@ -40,19 +40,17 @@ class Env:
         """
         # Init server
         client_id = p.connect(p.GUI if self.gui else p.DIRECT)
-        p.setAdditionalSearchPath(
-            pybullet_data.getDataPath(), physicsClientId=client_id)
+        p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setTimeStep(self.timestep, physicsClientId=client_id)
-        p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
+        p.configureDebugVisualizer(
+            p.COV_ENABLE_GUI, 0, physicsClientId=client_id)
         # Return
         return client_id
 
     def _randomize_destination(self):
-        x = random() * self.dst_rad
-        x_signed = -1 if random() > 0.5 else 1
-        y = random() * self.dst_rad
-        y_signed = -1 if random() > 0.5 else 1
-        destination = np.array([x * x_signed, y * y_signed], dtype=np.float32)
+        x = random() * self.dst_rad * (-1 if random() > 0.5 else 1)
+        y = random() * self.dst_rad * (-1 if random() > 0.5 else 1)
+        destination = np.array([x, y], dtype=np.float32)
         p.addUserDebugLine(
             np.append(destination, 0.),  # From
             np.append(destination, 3.),  # To
@@ -66,19 +64,19 @@ class Env:
         # Add gravity
         p.setGravity(0, 0, -10, physicsClientId=self.client_id)
         # Add plane and ohmni
-        plane(self.client_id, texture=False, wall=False)
+        plane(self.client_id)
         ohmni_id, _capture_image = ohmni(self.client_id)
         # Add obstacles at random positions
         for _ in range(self.num_of_obstacles):
-            obstacle(self.client_id)
+            obstacle(self.client_id, avoids=[[0, 0], self.destination])
         # Return
         return ohmni_id, _capture_image
 
     def _reset(self):
         """ Remove all objects, then rebuild them """
         p.resetSimulation(physicsClientId=self.client_id)
-        self.ohmni_id, self._capture_image = self._build()
         self.destination = self._randomize_destination()
+        self.ohmni_id, self._capture_image = self._build()
 
     def capture_image(self):
         """ Get image from navigation camera """
@@ -124,8 +122,8 @@ class PyEnv(py_environment.PyEnvironment):
         self.input_shape = self.image_shape + (3,)
         self.max_steps = 500
         self._fix_vanish_hyperparam = 0.15
-        self._num_of_obstacles = 10
-        self._dst_rad = 3
+        self._num_of_obstacles = 25
+        self._dst_rad = 5
         # Actions
         self._num_values = 5
         self._values = np.linspace(-1, 1, self._num_values)
@@ -218,10 +216,10 @@ class PyEnv(py_environment.PyEnvironment):
         # Reaching the destination
         _, cosine_sim = self._get_pose_state()
         if self._is_finished():
-            return True, 1
+            return True, 100
         # Dead
         if self._is_fatal():
-            return True, -1
+            return True, -100
         # Colliding
         if self._is_collided():
             return False, -0.2
@@ -257,11 +255,12 @@ class PyEnv(py_environment.PyEnvironment):
         _, mask = self._get_image_state()  # Image state
         pose, _ = self._get_pose_state()  # Pose state
         cent = np.array([w / 2, h / 2], dtype=np.float32)
-        dest = -pose * 64 + cent  # Transpose/Scale/Tranform
+        dest = -pose * 32 + cent  # Transpose/Scale/Tranform
+        color = 0.5
         mask = cv.line(mask,
                        (int(cent[1]), int(cent[0])),
                        (int(dest[1]), int(dest[0])),
-                       (0, 1, 0), thickness=3)
+                       (color, color, color), thickness=3)
         observation = cv.cvtColor(mask, cv.COLOR_RGB2GRAY)
         observation = np.reshape(observation, self.image_shape + (1,))
         # Set state

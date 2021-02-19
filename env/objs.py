@@ -3,32 +3,28 @@ import numpy as np
 from random import random, choice
 
 
-def plane(clientId, texture=False, wall=False):
+def plane(clientId):
     planeId = p.loadURDF('plane.urdf', physicsClientId=clientId)
-    if texture:
-        textureId = p.loadTexture(
-            'env/model/texture/wood1.jpg', physicsClientId=clientId)
-        p.changeVisualShape(
-            planeId, -1, textureUniqueId=textureId, physicsClientId=clientId)
-    if wall:
-        p.loadURDF('samurai.urdf', physicsClientId=clientId)
     return planeId
 
 
-def obstacle(clientId, pos=None, dynamic=False):
+def obstacle(clientId, pos=None, dynamic=False, avoids=[]):
     static_obstacles = ['env/model/table/table.urdf',
                         'cube_no_rotation.urdf',
                         'sphere2.urdf']
     dynamic_obstacles = ['cube_rotate.urdf']
     obstacles = dynamic_obstacles if dynamic else static_obstacles
-    zone_rad = 6 # Dropping zone
-    safe_rad = 1 # Ohmni's position
-    if pos is None:
-        x = max(random()*zone_rad, safe_rad)
-        x_signed = -1 if random() > 0.5 else 1
-        y = max(random()*zone_rad, safe_rad)
-        y_signed = -1 if random() > 0.5 else 1
-        pos = [x*x_signed, y*y_signed, 0.5]
+    zone_rad = 6  # Dropping zone
+    safe_rad = 0.5  # Ohmni's position
+    while pos is None:
+        x = random()*zone_rad * (-1 if random() > 0.5 else 1)
+        y = random()*zone_rad * (-1 if random() > 0.5 else 1)
+        ok = True
+        for (avoid_x, avoid_y) in avoids:
+            if abs(x - avoid_x) < safe_rad or abs(y - avoid_y) < safe_rad:
+                ok = False
+                break
+        pos = [x, y, 0.5] if ok else None
     return p.loadURDF(choice(obstacles), pos, physicsClientId=clientId)
 
 
