@@ -49,7 +49,7 @@ cache = rnnbuf.RNNBuffer(
     agent._n_steps,
     agent.rnn_units,
 )
-dataset = cache.pipeline().unbatch().prefetch(2)
+dataset = cache.pipeline().prefetch(2)
 iterator = iter(dataset)
 
 # Train
