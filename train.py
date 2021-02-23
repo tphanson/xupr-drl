@@ -49,8 +49,7 @@ def map_fn(experiences, info):
         experiences, agent._pre_n_steps, agent._n_steps)
     experiences = (step_types, start_state, start_policy_state,
                    action, rewards, end_state, end_policy_state)
-    print(experiences, info)
-    exit(0)
+    return experiences, info
 
 
 dataset = replay_buffer.as_dataset().map(map_fn)
@@ -63,10 +62,8 @@ start = time.time()
 loss = 0
 while agent.get_step() <= num_iterations:
     replay_buffer.collect_steps(train_env, agent)
-    step_types, start_state, start_policy_state, action, rewards, end_state, end_policy_state, key, priority = next(
-        iterator)
-    experience = (step_types, start_state, start_policy_state,
-                  action, rewards, end_state, end_policy_state)
+    experience, info = next(iterator)
+    key, probability, table_size, priority = info
     mean_loss, batch_loss = agent.train(experience)
     new_priority = tf.multiply(
         tf.ones(priority.shape, dtype=tf.float32),
