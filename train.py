@@ -37,6 +37,7 @@ cache = rnnbuf.RNNBuffer(
 )
 ds = iter(cache.pipeline().shuffle(256).batch(32))
 print(next(ds))
+exit(0)
 
 # Init buffer
 random_policy = random_tf_policy.RandomTFPolicy(
