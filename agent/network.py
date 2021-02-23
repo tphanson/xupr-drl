@@ -352,6 +352,7 @@ class Network():
 
     def train(self, experiences):
         self.step.assign_add(1)
+        print(experiences)
         step_types, start_state, start_policy_state, action, rewards, end_state, end_policy_state = experiences
         loss, batch_loss = self._train_step(
             step_types,
