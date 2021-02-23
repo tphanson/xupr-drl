@@ -46,7 +46,7 @@ replay_buffer.collect_steps(
 def map_fn(experiences, info):
     start_policy_state, end_policy_state = agent._hidden_states(experiences)
     step_types, start_state, action, rewards, end_state = parse_experiences(
-        experiences, agent.pre_n_steps, agent.n_steps)
+        experiences, agent._pre_n_steps, agent._n_steps)
     experiences = (step_types, start_state, start_policy_state,
                    action, rewards, end_state, end_policy_state)
     print(experiences, info)
