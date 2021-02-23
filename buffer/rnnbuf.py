@@ -38,10 +38,10 @@ class RNNBuffer:
             output_shapes=(
                 (self.batch_size, self.n_steps),
                 (self.batch_size, 96, 96, 3),
-                (self.batch_size, self.rnn_units, self.rnn_units),
+                (2, self.batch_size, self.rnn_units),
                 (self.batch_size,),
                 (self.batch_size, self.n_steps-1),
                 (self.batch_size, 96, 96, 3),
-                (self.batch_size, self.rnn_units, self.rnn_units)
+                (2, self.batch_size, self.rnn_units)
             )
         )
