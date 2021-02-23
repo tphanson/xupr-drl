@@ -22,7 +22,7 @@ agent = network.Network(
 ER = ExpectedReturn()
 
 # Replay buffer
-initial_collect_steps = 10
+initial_collect_steps = 10000
 replay_buffer = per.PrioritizedExperienceRelay(
     agent.data_spec,
     n_steps=agent.get_n_steps(),
@@ -35,7 +35,7 @@ cache = rnnbuf.RNNBuffer(
     agent._n_steps,
     agent.rnn_units,
 )
-ds = iter(cache.pipeline.shuffle(256).batch(32))
+ds = iter(cache.pipeline().shuffle(256).batch(32))
 print(next(ds))
 
 # Init buffer
