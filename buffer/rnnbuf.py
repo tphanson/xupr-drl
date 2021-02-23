@@ -20,13 +20,13 @@ class RNNBuffer:
             experiences)
         step_types, start_state, action, rewards, end_state = parse_experiences(
             experiences, self.pre_n_steps, self.n_steps)
-        print(1, step_types)
-        print(2, start_state)
-        print(3, start_policy_state)
-        print(4, action)
-        print(5, rewards)
-        print(6, end_state)
-        print(7, end_policy_state)
+        print(1, step_types.shape)
+        print(2, start_state.shape)
+        print(3, start_policy_state.shape)
+        print(4, action.shape)
+        print(5, rewards.shape)
+        print(6, end_state.shape)
+        print(7, end_policy_state.shape)
         yield step_types, start_state, start_policy_state, action, rewards, end_state, end_policy_state
 
     def pipeline(self):
