@@ -352,8 +352,9 @@ class Network():
 
     def train(self, experiences):
         self.step.assign_add(1)
-        print(experiences)
         step_types, start_state, start_policy_state, action, rewards, end_state, end_policy_state = experiences
+        # Because tf.data will automatically convert list to tensor
+        # while the rnn state only accepts list, then we have to manually reconvert it
         start_policy_state = [start_policy_state[0], start_policy_state[1]]
         end_policy_state = [end_policy_state[0], end_policy_state[1]]
         loss, batch_loss = self._train_step(
