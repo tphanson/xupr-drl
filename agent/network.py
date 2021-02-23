@@ -354,6 +354,8 @@ class Network():
         self.step.assign_add(1)
         print(experiences)
         step_types, start_state, start_policy_state, action, rewards, end_state, end_policy_state = experiences
+        start_policy_state = [start_policy_state[0], start_policy_state[1]]
+        end_policy_state = [end_policy_state[0], end_policy_state[1]]
         loss, batch_loss = self._train_step(
             step_types,
             start_state,
