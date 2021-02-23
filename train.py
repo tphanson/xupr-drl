@@ -62,9 +62,9 @@ start = time.time()
 loss = 0
 while agent.get_step() <= num_iterations:
     replay_buffer.collect_steps(train_env, agent)
-    experience, info = next(iterator)
+    experiences, info = next(iterator)
     key, probability, table_size, priority = info
-    mean_loss, batch_loss = agent.train(experience)
+    mean_loss, batch_loss = agent.train(experiences)
     new_priority = tf.multiply(
         tf.ones(priority.shape, dtype=tf.float32),
         tf.expand_dims(batch_loss / agent.get_n_steps(), axis=-1))
