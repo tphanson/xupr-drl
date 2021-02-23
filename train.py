@@ -63,8 +63,6 @@ while agent.get_step() <= num_iterations:
         iterator)
     experience = (step_types, start_state, start_policy_state,
                   action, rewards, end_state, end_policy_state)
-    print(experience)
-    exit(0)
     mean_loss, batch_loss = agent.train(experience)
     new_priority = tf.multiply(
         tf.ones(priority.shape, dtype=tf.float32),
