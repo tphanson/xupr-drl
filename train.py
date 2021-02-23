@@ -1,10 +1,12 @@
 import time
 import tensorflow as tf
 from tf_agents.policies import random_tf_policy
+
 from agent import network
-from buffer import per, rnnbuf
+from buffer import per
 from env import OhmniInSpace
 from criterion import ExpectedReturn
+from helper.utils import parse_experiences
 
 
 # Environment
@@ -39,17 +41,15 @@ replay_buffer.collect_steps(
     train_env, random_policy,
     steps=initial_collect_steps
 )
-# dataset = replay_buffer.as_dataset()
-# iterator = iter(dataset)
 
-cache = rnnbuf.RNNBuffer(
-    replay_buffer,
-    agent._hidden_states,
-    agent._pre_n_steps,
-    agent._n_steps,
-    agent.rnn_units,
-)
-dataset = cache.pipeline().prefetch(2)
+
+def map_fn(experiences, info):
+    # start_policy_state, end_policy_state = agent._hidden_states_fn(experiences)
+    print(experiences, info)
+    exit(0)
+
+
+dataset = replay_buffer.as_dataset().map(map_fn)
 iterator = iter(dataset)
 
 # Train

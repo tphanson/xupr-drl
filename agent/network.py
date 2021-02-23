@@ -133,8 +133,6 @@ class Network():
         v = v_head(x)
         a = a_head(x)
         x = v + (a - tf.reduce_mean(a, axis=1, keepdims=True))
-        print(x)
-        exit(0)
         x = head(x)
         # Return model
         return keras.Model(
