@@ -14,6 +14,7 @@ class Network():
     def __init__(self, time_step_spec, observation_spec, action_spec, training=False):
         # Network params
         self.rnn_units = 768
+        self.strategy = tf.distribute.MirroredStrategy()
         # Specs
         self.time_step_spec = time_step_spec
         self.observation_spec = observation_spec
@@ -91,54 +92,56 @@ class Network():
         )
 
     def _policy(self):
-        # Get shapes
-        image_shape = self.observation_spec.shape
-        hidden_state_shape = self.policy_state_spec[0].shape
-        carry_state_shape = self.policy_state_spec[1].shape
-        # Define inputs
-        inputs = keras.layers.Input(shape=image_shape)
-        init_hidden_state = keras.layers.Input(shape=hidden_state_shape)
-        init_carry_state = keras.layers.Input(shape=carry_state_shape)
-        # Define network
-        cnn = keras.Sequential([  # (96, 96, *)
-            keras.layers.Conv2D(  # (92, 92, *)
-                filters=32, kernel_size=(5, 5), strides=(1, 1), activation='relu'),
-            keras.layers.MaxPooling2D((2, 2)),  # (46, 46, *)
-            keras.layers.Conv2D(  # (42, 42, 32)
-                filters=64, kernel_size=(5, 5), strides=(1, 1), activation='relu'),
-            keras.layers.MaxPooling2D((2, 2)),  # (21, 21, *)
-            keras.layers.Conv2D(  # (10, 10, *)
-                filters=128, kernel_size=(3, 3), strides=(2, 2), activation='relu'),
-            keras.layers.MaxPooling2D((2, 2)),  # (5, 5, *)
-            keras.layers.Flatten(),
-            keras.layers.Dense(1024, activation='relu'),
-        ])
-        rnn = keras.layers.LSTM(self.rnn_units, return_state=True)
-        v_head = keras.Sequential([
-            keras.layers.Dense(512, activation='relu'),
-            keras.layers.Dense(self._num_of_atoms),
-            keras.layers.Reshape((1, self._num_of_atoms)),
-        ])
-        a_head = keras.Sequential([
-            keras.layers.Dense(1024, activation='relu'),
-            keras.layers.Dense(self._num_of_actions * self._num_of_atoms),
-            keras.layers.Reshape((self._num_of_actions, self._num_of_atoms)),
-        ])
-        head = keras.layers.Softmax()
-        # Flow data
-        x = cnn(inputs)
-        x = tf.expand_dims(x, axis=1)
-        x, h_state, c_state = rnn(
-            x, initial_state=[init_hidden_state, init_carry_state])
-        v = v_head(x)
-        a = a_head(x)
-        x = v + (a - tf.reduce_mean(a, axis=1, keepdims=True))
-        x = head(x)
-        # Return model
-        return keras.Model(
-            inputs=[inputs, [init_hidden_state, init_carry_state]],
-            outputs=[x, [h_state, c_state]]
-        )
+        with self.strategy.scope():
+            # Get shapes
+            image_shape = self.observation_spec.shape
+            hidden_state_shape = self.policy_state_spec[0].shape
+            carry_state_shape = self.policy_state_spec[1].shape
+            # Define inputs
+            inputs = keras.layers.Input(shape=image_shape)
+            init_hidden_state = keras.layers.Input(shape=hidden_state_shape)
+            init_carry_state = keras.layers.Input(shape=carry_state_shape)
+            # Define network
+            cnn = keras.Sequential([  # (96, 96, *)
+                keras.layers.Conv2D(  # (92, 92, *)
+                    filters=32, kernel_size=(5, 5), strides=(1, 1), activation='relu'),
+                keras.layers.MaxPooling2D((2, 2)),  # (46, 46, *)
+                keras.layers.Conv2D(  # (42, 42, 32)
+                    filters=64, kernel_size=(5, 5), strides=(1, 1), activation='relu'),
+                keras.layers.MaxPooling2D((2, 2)),  # (21, 21, *)
+                keras.layers.Conv2D(  # (10, 10, *)
+                    filters=128, kernel_size=(3, 3), strides=(2, 2), activation='relu'),
+                keras.layers.MaxPooling2D((2, 2)),  # (5, 5, *)
+                keras.layers.Flatten(),
+                keras.layers.Dense(1024, activation='relu'),
+            ])
+            rnn = keras.layers.LSTM(self.rnn_units, return_state=True)
+            v_head = keras.Sequential([
+                keras.layers.Dense(512, activation='relu'),
+                keras.layers.Dense(self._num_of_atoms),
+                keras.layers.Reshape((1, self._num_of_atoms)),
+            ])
+            a_head = keras.Sequential([
+                keras.layers.Dense(1024, activation='relu'),
+                keras.layers.Dense(self._num_of_actions * self._num_of_atoms),
+                keras.layers.Reshape(
+                    (self._num_of_actions, self._num_of_atoms)),
+            ])
+            head = keras.layers.Softmax()
+            # Flow data
+            x = cnn(inputs)
+            x = tf.expand_dims(x, axis=1)
+            x, h_state, c_state = rnn(
+                x, initial_state=[init_hidden_state, init_carry_state])
+            v = v_head(x)
+            a = a_head(x)
+            x = v + (a - tf.reduce_mean(a, axis=1, keepdims=True))
+            x = head(x)
+            # Return model
+            return keras.Model(
+                inputs=[inputs, [init_hidden_state, init_carry_state]],
+                outputs=[x, [h_state, c_state]]
+            )
 
     #
     # Double Q-Learning
