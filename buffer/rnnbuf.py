@@ -16,6 +16,8 @@ class RNNBuffer:
 
     def generator(self):
         experiences, info = next(self.iterator)
+        print(info)
+        exit(0)
         start_policy_state, end_policy_state = self.hidden_states_fn(
             experiences)
         step_types, start_state, action, rewards, end_state = parse_experiences(
