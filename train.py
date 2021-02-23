@@ -28,16 +28,6 @@ replay_buffer = per.PrioritizedExperienceRelay(
     n_steps=agent.get_n_steps(),
     batch_size=train_env.batch_size
 )
-cache = rnnbuf.RNNBuffer(
-    replay_buffer,
-    agent._hidden_states,
-    agent._pre_n_steps,
-    agent._n_steps,
-    agent.rnn_units,
-)
-ds = iter(cache.pipeline().shuffle(256).batch(32))
-print(next(ds))
-exit(0)
 
 # Init buffer
 random_policy = random_tf_policy.RandomTFPolicy(
@@ -49,8 +39,21 @@ replay_buffer.collect_steps(
     train_env, random_policy,
     steps=initial_collect_steps
 )
-dataset = replay_buffer.as_dataset()
+print("=================")
+# dataset = replay_buffer.as_dataset()
+# iterator = iter(dataset)
+
+cache = rnnbuf.RNNBuffer(
+    replay_buffer,
+    agent._hidden_states,
+    agent._pre_n_steps,
+    agent._n_steps,
+    agent.rnn_units,
+)
+dataset = cache.pipeline().shuffle(256).batch(32)
 iterator = iter(dataset)
+print(next(iterator))
+exit(0)
 
 # Train
 num_iterations = 4000000
