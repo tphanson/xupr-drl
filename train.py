@@ -59,10 +59,12 @@ start = time.time()
 loss = 0
 while agent.get_step() <= num_iterations:
     replay_buffer.collect_steps(train_env, agent)
-    experience, info = next(iterator)
+    step_types, start_state, start_policy_state, action, rewards, end_state, end_policy_state, key, priority = next(
+        iterator)
+    experience = (step_types, start_state, start_policy_state,
+                  action, rewards, end_state, end_policy_state)
     print(experience)
     exit(0)
-    key, probability, table_size, priority = info
     mean_loss, batch_loss = agent.train(experience)
     new_priority = tf.multiply(
         tf.ones(priority.shape, dtype=tf.float32),

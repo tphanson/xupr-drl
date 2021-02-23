@@ -16,13 +16,12 @@ class RNNBuffer:
 
     def generator(self):
         experiences, info = next(self.iterator)
-        print(info)
-        exit(0)
+        key, probability, table_size, priority = info
         start_policy_state, end_policy_state = self.hidden_states_fn(
             experiences)
         step_types, start_state, action, rewards, end_state = parse_experiences(
             experiences, self.pre_n_steps, self.n_steps)
-        yield step_types, start_state, start_policy_state, action, rewards, end_state, end_policy_state
+        yield step_types, start_state, start_policy_state, action, rewards, end_state, end_policy_state, key, priority
 
     def pipeline(self):
         return tf.data.Dataset.from_generator(
@@ -37,6 +36,8 @@ class RNNBuffer:
                 (self.batch_size, 1),
                 (self.batch_size, self.n_steps-1),
                 (self.batch_size, 96, 96, 3),
-                (2, self.batch_size, self.rnn_units)
+                (2, self.batch_size, self.rnn_units),
+                (self.batch_size, self.pre_n_steps + self.n_steps),
+                (self.batch_size, self.pre_n_steps + self.n_steps),
             )
         )
