@@ -28,6 +28,13 @@ class RNNBuffer:
             args=[],
             output_types=(tf.int32, tf.float32, tf.float32,
                           tf.int32, tf.float32, tf.float32, tf.float32),
-            output_shapes=((self.batch_size,), (self.batch_size, 96, 96, 3), (self.batch_size, self.rnn_units, self.rnn_units),
-                           (self.batch_size,), (self.batch_size, self.n_steps), (self.batch_size, 96, 96, 3), (self.batch_size, self.rnn_units, self.rnn_units))
+            output_shapes=(
+                (self.batch_size,),
+                (self.batch_size, 96, 96, 3),
+                (self.batch_size, self.rnn_units, self.rnn_units),
+                (self.batch_size,),
+                (self.batch_size, self.n_steps-1),
+                (self.batch_size, 96, 96, 3),
+                (self.batch_size, self.rnn_units, self.rnn_units)
+            )
         )
