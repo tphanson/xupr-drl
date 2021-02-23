@@ -27,7 +27,7 @@ class Network():
         self.epsilon = 0.9 if training else 1.
         self.gamma = 0.99
         self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
-        self._callback_period = 5000
+        self._callback_period = 1000
         self.step = tf.Variable(initial_value=0, dtype=tf.int32, name='step')
         # Deep Q-Learning
         self._num_of_actions = self.action_spec.maximum - self.action_spec.minimum + 1
@@ -352,9 +352,7 @@ class Network():
 
     def train(self, experiences):
         self.step.assign_add(1)
-        start_policy_state, end_policy_state = self._hidden_states(experiences)
-        step_types, start_state, action, rewards, end_state = parse_experiences(
-            experiences, self._pre_n_steps, self._n_steps)
+        step_types, start_state, start_policy_state, action, rewards, end_state, end_policy_state = experiences
         loss, batch_loss = self._train_step(
             step_types,
             start_state,

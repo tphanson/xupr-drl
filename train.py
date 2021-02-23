@@ -39,7 +39,6 @@ replay_buffer.collect_steps(
     train_env, random_policy,
     steps=initial_collect_steps
 )
-print("=================")
 # dataset = replay_buffer.as_dataset()
 # iterator = iter(dataset)
 
@@ -50,10 +49,8 @@ cache = rnnbuf.RNNBuffer(
     agent._n_steps,
     agent.rnn_units,
 )
-dataset = cache.pipeline().shuffle(256).batch(32)
+dataset = cache.pipeline().unbtach().prefetch(2)
 iterator = iter(dataset)
-print(next(iterator))
-exit(0)
 
 # Train
 num_iterations = 4000000
