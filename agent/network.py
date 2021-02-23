@@ -12,36 +12,37 @@ CHECKPOINT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 class Network():
     def __init__(self, time_step_spec, observation_spec, action_spec, training=False):
-        # Network params
         self.strategy = tf.distribute.MirroredStrategy()
-        self.rnn_units = 768
-        # Specs
-        self.time_step_spec = time_step_spec
-        self.observation_spec = observation_spec
-        self.action_spec = action_spec
-        self.policy_state_spec = [
-            tf.TensorSpec((self.rnn_units,), dtype=tf.float32),
-            tf.TensorSpec((self.rnn_units,), dtype=tf.float32),
-        ]
-        self.data_spec = self._data_spec()
-        # Training params
-        self.epsilon = 0.9 if training else 1.
-        self.gamma = 0.99
-        self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
-        self._callback_period = 1000
-        self.step = tf.Variable(initial_value=0, dtype=tf.int32, name='step')
-        # Deep Q-Learning
-        self._num_of_actions = self.action_spec.maximum - self.action_spec.minimum + 1
-        # Distributional Learning (C51)
-        self._num_of_atoms = 51
-        self._min_q_value = -20
-        self._max_q_value = 10
-        self._supports = tf.linspace(
-            tf.constant(self._min_q_value, dtype=tf.float32),
-            tf.constant(self._max_q_value, dtype=tf.float32),
-            self._num_of_atoms
-        )
         with self.strategy.scope():
+            # Network params
+            self.rnn_units = 768
+            # Specs
+            self.time_step_spec = time_step_spec
+            self.observation_spec = observation_spec
+            self.action_spec = action_spec
+            self.policy_state_spec = [
+                tf.TensorSpec((self.rnn_units,), dtype=tf.float32),
+                tf.TensorSpec((self.rnn_units,), dtype=tf.float32),
+            ]
+            self.data_spec = self._data_spec()
+            # Training params
+            self.epsilon = 0.9 if training else 1.
+            self.gamma = 0.99
+            self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
+            self._callback_period = 1000
+            self.step = tf.Variable(
+                initial_value=0, dtype=tf.int32, name='step')
+            # Deep Q-Learning
+            self._num_of_actions = self.action_spec.maximum - self.action_spec.minimum + 1
+            # Distributional Learning (C51)
+            self._num_of_atoms = 51
+            self._min_q_value = -20
+            self._max_q_value = 10
+            self._supports = tf.linspace(
+                tf.constant(self._min_q_value, dtype=tf.float32),
+                tf.constant(self._max_q_value, dtype=tf.float32),
+                self._num_of_atoms
+            )
             # Policies
             self.policy = self._policy()
             # Checkpoints
@@ -59,10 +60,10 @@ class Network():
             # Double Q-Learning
             self.target_policy = self._policy()
             self._update_target_policy()
-        # Multi-steps Learning
-        self._n_steps = 5
-        # Recurrent Q-Learning
-        self._pre_n_steps = 25
+            # Multi-steps Learning
+            self._n_steps = 5
+            # Recurrent Q-Learning
+            self._pre_n_steps = 25
 
     #
     # Common functions
