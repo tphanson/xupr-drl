@@ -2,7 +2,7 @@ import time
 import tensorflow as tf
 from tf_agents.policies import random_tf_policy
 from agent import network
-from buffer import per
+from buffer import per, rnnbuf
 from env import OhmniInSpace
 from criterion import ExpectedReturn
 
@@ -22,12 +22,22 @@ agent = network.Network(
 ER = ExpectedReturn()
 
 # Replay buffer
-initial_collect_steps = 10000
+initial_collect_steps = 10
 replay_buffer = per.PrioritizedExperienceRelay(
     agent.data_spec,
     n_steps=agent.get_n_steps(),
     batch_size=train_env.batch_size
 )
+cache = rnnbuf.RNNBuffer(
+    replay_buffer,
+    agent._hidden_states,
+    agent._pre_n_steps,
+    agent._n_steps,
+    agent.rnn_units,
+)
+ds = iter(cache.pipeline.shuffle(256).batch(32))
+print(next(ds))
+
 # Init buffer
 random_policy = random_tf_policy.RandomTFPolicy(
     time_step_spec=agent.time_step_spec,
