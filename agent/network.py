@@ -14,7 +14,6 @@ class Network():
     def __init__(self, time_step_spec, observation_spec, action_spec, training=False):
         # Network params
         self.rnn_units = 768
-        self.strategy = tf.distribute.MirroredStrategy()
         # Specs
         self.time_step_spec = time_step_spec
         self.observation_spec = observation_spec
@@ -92,7 +91,8 @@ class Network():
         )
 
     def _policy(self):
-        with self.strategy.scope():
+        strategy = tf.distribute.MirroredStrategy()
+        with strategy.scope():
             # Get shapes
             image_shape = self.observation_spec.shape
             hidden_state_shape = self.policy_state_spec[0].shape
