@@ -27,8 +27,6 @@ class Network():
         self.epsilon = 0.9 if training else 1.
         self.gamma = 0.99
         self._callback_period = 1000
-        self.step = tf.Variable(
-            initial_value=0, dtype=tf.int32, name='step')
         # Deep Q-Learning
         self._num_of_actions = self.action_spec.maximum - self.action_spec.minimum + 1
         # Distributional Learning (C51)
@@ -43,7 +41,9 @@ class Network():
         # Policies
         with tf.device('/GPU:0'):
             self.policy = self._policy()
-        self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
+            self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
+            self.step = tf.Variable(
+                initial_value=0, dtype=tf.int32, name='step')
         # Checkpoints
         self.checkpoint = tf.train.Checkpoint(
             optimizer=self.optimizer,
