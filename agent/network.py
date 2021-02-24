@@ -157,37 +157,36 @@ class Network():
 
     @tf.function
     def _expected_return(self, step_types, rewards):
-        with tf.device('/GPU:2'):
-            (batch_size, _) = step_types.shape
-            not_last = tf.reverse(tf.transpose(tf.stack(
-                [tf.reduce_prod(tf.split(
-                    tf.cast(
-                        tf.less(step_types, time_step.StepType.LAST),
-                        tf.float32
-                    ),
-                    [self._n_steps - 1 - i, i + 1],
-                    axis=-1
-                )[0], axis=-1) for i in range(self._n_steps)]
-            )), axis=[-1])
-            prev_states_not_last, end_state_not_last = tf.split(
-                not_last,
-                [self._n_steps - 1, 1],
+        (batch_size, _) = step_types.shape
+        not_last = tf.reverse(tf.transpose(tf.stack(
+            [tf.reduce_prod(tf.split(
+                tf.cast(
+                    tf.less(step_types, time_step.StepType.LAST),
+                    tf.float32
+                ),
+                [self._n_steps - 1 - i, i + 1],
                 axis=-1
-            )
-            prev_states_discount, last_state_discount = tf.split(
-                tf.stack(
-                    [[self.gamma**i for i in range(self._n_steps)] for _ in range(batch_size)]),
-                [self._n_steps - 1, 1],
-                axis=-1
-            )
-            supports_batch = tf.stack(
-                [self._supports for _ in range(batch_size)])
-            discounted_rewards = tf.reduce_sum(
-                prev_states_not_last * prev_states_discount * rewards,
-                axis=-1,
-                keepdims=True
-            )
-            last_return = end_state_not_last * last_state_discount * supports_batch
+            )[0], axis=-1) for i in range(self._n_steps)]
+        )), axis=[-1])
+        prev_states_not_last, end_state_not_last = tf.split(
+            not_last,
+            [self._n_steps - 1, 1],
+            axis=-1
+        )
+        prev_states_discount, last_state_discount = tf.split(
+            tf.stack(
+                [[self.gamma**i for i in range(self._n_steps)] for _ in range(batch_size)]),
+            [self._n_steps - 1, 1],
+            axis=-1
+        )
+        supports_batch = tf.stack(
+            [self._supports for _ in range(batch_size)])
+        discounted_rewards = tf.reduce_sum(
+            prev_states_not_last * prev_states_discount * rewards,
+            axis=-1,
+            keepdims=True
+        )
+        last_return = end_state_not_last * last_state_discount * supports_batch
         return discounted_rewards + last_return
 
     #
@@ -196,44 +195,43 @@ class Network():
 
     @tf.function
     def _align(self, x, q):
-        with tf.device('/GPU:2'):
-            # Fundamental computation
-            clipped_x = tf.minimum(tf.maximum(
-                x, self._min_q_value), self._max_q_value)
-            delta_z = (self._max_q_value - self._min_q_value) / \
-                (self._num_of_atoms - 1)
-            b = (clipped_x - self._min_q_value) / delta_z
-            l = tf.math.floor(b)
-            u = tf.math.ceil(b)
-            # Create indices masks
-            (batch_size, _) = x.shape
-            mask_i = build_mask(batch_size, self._num_of_atoms)
-            mask_l = tf.repeat(
-                tf.expand_dims(l, axis=1),
-                repeats=[self._num_of_atoms],
-                axis=1
-            )
-            mask_u = tf.repeat(
-                tf.expand_dims(u, axis=1),
-                repeats=[self._num_of_atoms],
-                axis=1
-            )
-            # Compare to get boolean (active nodes)
-            bool_l = tf.cast(tf.equal(mask_i, mask_l), tf.float32)
-            bool_u = tf.cast(tf.equal(mask_i, mask_u), tf.float32)
-            # Compute ml, mu at active nodes
-            _ml = tf.repeat(
-                tf.expand_dims(q * (u - b), axis=1),
-                repeats=[self._num_of_atoms],
-                axis=1
-            )
-            ml = tf.reduce_sum(tf.multiply(bool_l, _ml), axis=-1)
-            _mu = tf.repeat(
-                tf.expand_dims(q * (b - l), axis=1),
-                repeats=[self._num_of_atoms],
-                axis=1
-            )
-            mu = tf.reduce_sum(tf.multiply(bool_u, _mu), axis=-1)
+        # Fundamental computation
+        clipped_x = tf.minimum(tf.maximum(
+            x, self._min_q_value), self._max_q_value)
+        delta_z = (self._max_q_value - self._min_q_value) / \
+            (self._num_of_atoms - 1)
+        b = (clipped_x - self._min_q_value) / delta_z
+        l = tf.math.floor(b)
+        u = tf.math.ceil(b)
+        # Create indices masks
+        (batch_size, _) = x.shape
+        mask_i = build_mask(batch_size, self._num_of_atoms)
+        mask_l = tf.repeat(
+            tf.expand_dims(l, axis=1),
+            repeats=[self._num_of_atoms],
+            axis=1
+        )
+        mask_u = tf.repeat(
+            tf.expand_dims(u, axis=1),
+            repeats=[self._num_of_atoms],
+            axis=1
+        )
+        # Compare to get boolean (active nodes)
+        bool_l = tf.cast(tf.equal(mask_i, mask_l), tf.float32)
+        bool_u = tf.cast(tf.equal(mask_i, mask_u), tf.float32)
+        # Compute ml, mu at active nodes
+        _ml = tf.repeat(
+            tf.expand_dims(q * (u - b), axis=1),
+            repeats=[self._num_of_atoms],
+            axis=1
+        )
+        ml = tf.reduce_sum(tf.multiply(bool_l, _ml), axis=-1)
+        _mu = tf.repeat(
+            tf.expand_dims(q * (b - l), axis=1),
+            repeats=[self._num_of_atoms],
+            axis=1
+        )
+        mu = tf.reduce_sum(tf.multiply(bool_u, _mu), axis=-1)
         # Return aligned distribution
         return mu + ml
 
