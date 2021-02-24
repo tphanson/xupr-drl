@@ -12,7 +12,6 @@ CHECKPOINT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 class Network():
     def __init__(self, time_step_spec, observation_spec, action_spec, training=False):
-        self.strategy = tf.distribute.MirroredStrategy()
         # Network params
         self.rnn_units = 768
         # Specs
@@ -42,23 +41,24 @@ class Network():
             self._num_of_atoms
         )
         # Policies
-        with self.strategy.scope():
+        with tf.device('/GPU:0'):
             self.policy = self._policy()
-            self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
+        self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
         # Checkpoints
-        # self.checkpoint = tf.train.Checkpoint(
-        #     optimizer=self.optimizer,
-        #     model=self.policy,
-        #     step=self.step,
-        # )
-        # self.manager = tf.train.CheckpointManager(
-        #     self.checkpoint,
-        #     CHECKPOINT_DIR,
-        #     max_to_keep=1
-        # )
+        self.checkpoint = tf.train.Checkpoint(
+            optimizer=self.optimizer,
+            model=self.policy,
+            step=self.step,
+        )
+        self.manager = tf.train.CheckpointManager(
+            self.checkpoint,
+            CHECKPOINT_DIR,
+            max_to_keep=1
+        )
         self._load_checkpoint()
         # Double Q-Learning
-        self.target_policy = self._policy()
+        with tf.device('/GPU:1'):
+            self.target_policy = self._policy()
         self._update_target_policy()
         # Multi-steps Learning
         self._n_steps = 5
@@ -380,9 +380,7 @@ class Network():
     #
 
     def _load_checkpoint(self):
-        print('load checkpoint')
-        # self.checkpoint.restore(self.manager.latest_checkpoint)
+        self.checkpoint.restore(self.manager.latest_checkpoint)
 
     def _save_checkpoint(self):
-        print('save checkpoint')
-        # self.manager.save()
+        self.manager.save()
