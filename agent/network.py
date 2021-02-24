@@ -26,7 +26,7 @@ class Network():
         # Training params
         self.epsilon = 0.9 if training else 1.
         self.gamma = 0.99
-        self._callback_period = 1000
+        self._callback_period = 5000
         # Deep Q-Learning
         self._num_of_actions = self.action_spec.maximum - self.action_spec.minimum + 1
         # Distributional Learning (C51)
@@ -63,7 +63,7 @@ class Network():
         # Multi-steps Learning
         self._n_steps = 5
         # Recurrent Q-Learning
-        self._pre_n_steps = 25
+        self._pre_n_steps = 45
 
     #
     # Common functions
