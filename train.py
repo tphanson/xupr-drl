@@ -8,8 +8,6 @@ from env import OhmniInSpace
 from criterion import ExpectedReturn
 from helper.utils import parse_experiences
 
-tf.debugging.set_log_device_placement(True)
-
 
 # Environment
 train_env = OhmniInSpace.env()
