@@ -13,57 +13,56 @@ CHECKPOINT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 class Network():
     def __init__(self, time_step_spec, observation_spec, action_spec, training=False):
         self.strategy = tf.distribute.MirroredStrategy()
-        with self.strategy.scope():
-            # Network params
-            self.rnn_units = 768
-            # Specs
-            self.time_step_spec = time_step_spec
-            self.observation_spec = observation_spec
-            self.action_spec = action_spec
-            self.policy_state_spec = [
-                tf.TensorSpec((self.rnn_units,), dtype=tf.float32),
-                tf.TensorSpec((self.rnn_units,), dtype=tf.float32),
-            ]
-            self.data_spec = self._data_spec()
-            # Training params
-            self.epsilon = 0.9 if training else 1.
-            self.gamma = 0.99
-            self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
-            self._callback_period = 1000
-            self.step = tf.Variable(
-                initial_value=0, dtype=tf.int32, name='step')
-            # Deep Q-Learning
-            self._num_of_actions = self.action_spec.maximum - self.action_spec.minimum + 1
-            # Distributional Learning (C51)
-            self._num_of_atoms = 51
-            self._min_q_value = -20
-            self._max_q_value = 10
-            self._supports = tf.linspace(
-                tf.constant(self._min_q_value, dtype=tf.float32),
-                tf.constant(self._max_q_value, dtype=tf.float32),
-                self._num_of_atoms
-            )
-            # Policies
-            self.policy = self._policy()
-            # Checkpoints
-            self.checkpoint = tf.train.Checkpoint(
-                optimizer=self.optimizer,
-                model=self.policy,
-                step=self.step,
-            )
-            self.manager = tf.train.CheckpointManager(
-                self.checkpoint,
-                CHECKPOINT_DIR,
-                max_to_keep=1
-            )
-            self._load_checkpoint()
-            # Double Q-Learning
-            self.target_policy = self._policy()
-            self._update_target_policy()
-            # Multi-steps Learning
-            self._n_steps = 5
-            # Recurrent Q-Learning
-            self._pre_n_steps = 25
+        # Network params
+        self.rnn_units = 768
+        # Specs
+        self.time_step_spec = time_step_spec
+        self.observation_spec = observation_spec
+        self.action_spec = action_spec
+        self.policy_state_spec = [
+            tf.TensorSpec((self.rnn_units,), dtype=tf.float32),
+            tf.TensorSpec((self.rnn_units,), dtype=tf.float32),
+        ]
+        self.data_spec = self._data_spec()
+        # Training params
+        self.epsilon = 0.9 if training else 1.
+        self.gamma = 0.99
+        self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
+        self._callback_period = 1000
+        self.step = tf.Variable(
+            initial_value=0, dtype=tf.int32, name='step')
+        # Deep Q-Learning
+        self._num_of_actions = self.action_spec.maximum - self.action_spec.minimum + 1
+        # Distributional Learning (C51)
+        self._num_of_atoms = 51
+        self._min_q_value = -20
+        self._max_q_value = 10
+        self._supports = tf.linspace(
+            tf.constant(self._min_q_value, dtype=tf.float32),
+            tf.constant(self._max_q_value, dtype=tf.float32),
+            self._num_of_atoms
+        )
+        # Policies
+        self.policy = self._policy()
+        # Checkpoints
+        # self.checkpoint = tf.train.Checkpoint(
+        #     optimizer=self.optimizer,
+        #     model=self.policy,
+        #     step=self.step,
+        # )
+        # self.manager = tf.train.CheckpointManager(
+        #     self.checkpoint,
+        #     CHECKPOINT_DIR,
+        #     max_to_keep=1
+        # )
+        self._load_checkpoint()
+        # Double Q-Learning
+        self.target_policy = self._policy()
+        self._update_target_policy()
+        # Multi-steps Learning
+        self._n_steps = 5
+        # Recurrent Q-Learning
+        self._pre_n_steps = 25
 
     #
     # Common functions
@@ -94,55 +93,56 @@ class Network():
         )
 
     def _policy(self):
-        # Get shapes
-        image_shape = self.observation_spec.shape
-        hidden_state_shape = self.policy_state_spec[0].shape
-        carry_state_shape = self.policy_state_spec[1].shape
-        # Define inputs
-        inputs = keras.layers.Input(shape=image_shape)
-        init_hidden_state = keras.layers.Input(shape=hidden_state_shape)
-        init_carry_state = keras.layers.Input(shape=carry_state_shape)
-        # Define network
-        cnn = keras.Sequential([  # (96, 96, *)
-            keras.layers.Conv2D(  # (92, 92, *)
-                filters=32, kernel_size=(5, 5), strides=(1, 1), activation='relu'),
-            keras.layers.MaxPooling2D((2, 2)),  # (46, 46, *)
-            keras.layers.Conv2D(  # (42, 42, 32)
-                filters=64, kernel_size=(5, 5), strides=(1, 1), activation='relu'),
-            keras.layers.MaxPooling2D((2, 2)),  # (21, 21, *)
-            keras.layers.Conv2D(  # (10, 10, *)
-                filters=128, kernel_size=(3, 3), strides=(2, 2), activation='relu'),
-            keras.layers.MaxPooling2D((2, 2)),  # (5, 5, *)
-            keras.layers.Flatten(),
-            keras.layers.Dense(1024, activation='relu'),
-        ])
-        rnn = keras.layers.LSTM(self.rnn_units, return_state=True)
-        v_head = keras.Sequential([
-            keras.layers.Dense(512, activation='relu'),
-            keras.layers.Dense(self._num_of_atoms),
-            keras.layers.Reshape((1, self._num_of_atoms)),
-        ])
-        a_head = keras.Sequential([
-            keras.layers.Dense(1024, activation='relu'),
-            keras.layers.Dense(self._num_of_actions * self._num_of_atoms),
-            keras.layers.Reshape(
-                (self._num_of_actions, self._num_of_atoms)),
-        ])
-        head = keras.layers.Softmax()
-        # Flow data
-        x = cnn(inputs)
-        x = tf.expand_dims(x, axis=1)
-        x, h_state, c_state = rnn(
-            x, initial_state=[init_hidden_state, init_carry_state])
-        v = v_head(x)
-        a = a_head(x)
-        x = v + (a - tf.reduce_mean(a, axis=1, keepdims=True))
-        x = head(x)
-        # Return model
-        return keras.Model(
-            inputs=[inputs, [init_hidden_state, init_carry_state]],
-            outputs=[x, [h_state, c_state]]
-        )
+        with self.strategy.scope():
+            # Get shapes
+            image_shape = self.observation_spec.shape
+            hidden_state_shape = self.policy_state_spec[0].shape
+            carry_state_shape = self.policy_state_spec[1].shape
+            # Define inputs
+            inputs = keras.layers.Input(shape=image_shape)
+            init_hidden_state = keras.layers.Input(shape=hidden_state_shape)
+            init_carry_state = keras.layers.Input(shape=carry_state_shape)
+            # Define network
+            cnn = keras.Sequential([  # (96, 96, *)
+                keras.layers.Conv2D(  # (92, 92, *)
+                    filters=32, kernel_size=(5, 5), strides=(1, 1), activation='relu'),
+                keras.layers.MaxPooling2D((2, 2)),  # (46, 46, *)
+                keras.layers.Conv2D(  # (42, 42, 32)
+                    filters=64, kernel_size=(5, 5), strides=(1, 1), activation='relu'),
+                keras.layers.MaxPooling2D((2, 2)),  # (21, 21, *)
+                keras.layers.Conv2D(  # (10, 10, *)
+                    filters=128, kernel_size=(3, 3), strides=(2, 2), activation='relu'),
+                keras.layers.MaxPooling2D((2, 2)),  # (5, 5, *)
+                keras.layers.Flatten(),
+                keras.layers.Dense(1024, activation='relu'),
+            ])
+            rnn = keras.layers.LSTM(self.rnn_units, return_state=True)
+            v_head = keras.Sequential([
+                keras.layers.Dense(512, activation='relu'),
+                keras.layers.Dense(self._num_of_atoms),
+                keras.layers.Reshape((1, self._num_of_atoms)),
+            ])
+            a_head = keras.Sequential([
+                keras.layers.Dense(1024, activation='relu'),
+                keras.layers.Dense(self._num_of_actions * self._num_of_atoms),
+                keras.layers.Reshape(
+                    (self._num_of_actions, self._num_of_atoms)),
+            ])
+            head = keras.layers.Softmax()
+            # Flow data
+            x = cnn(inputs)
+            x = tf.expand_dims(x, axis=1)
+            x, h_state, c_state = rnn(
+                x, initial_state=[init_hidden_state, init_carry_state])
+            v = v_head(x)
+            a = a_head(x)
+            x = v + (a - tf.reduce_mean(a, axis=1, keepdims=True))
+            x = head(x)
+            # Return model
+            return keras.Model(
+                inputs=[inputs, [init_hidden_state, init_carry_state]],
+                outputs=[x, [h_state, c_state]]
+            )
 
     #
     # Double Q-Learning
@@ -380,7 +380,9 @@ class Network():
     #
 
     def _load_checkpoint(self):
-        self.checkpoint.restore(self.manager.latest_checkpoint)
+        print('load checkpoint')
+        # self.checkpoint.restore(self.manager.latest_checkpoint)
 
     def _save_checkpoint(self):
-        self.manager.save()
+        print('save checkpoint')
+        # self.manager.save()
