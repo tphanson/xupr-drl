@@ -24,7 +24,7 @@ agent = network.Network(
 ER = ExpectedReturn()
 
 # Replay buffer
-initial_collect_steps = 1000
+initial_collect_steps = 10000
 replay_buffer = per.PrioritizedExperienceRelay(
     agent.data_spec,
     n_steps=agent.get_n_steps(),
