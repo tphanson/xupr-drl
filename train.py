@@ -54,7 +54,8 @@ def map_fn(experiences, info):
     return experiences, info
 
 
-dataset = replay_buffer.as_dataset().map(map_fn).prefetch(3)
+dataset = replay_buffer.as_dataset().map(
+    map_fn, num_parallel_calls=tf.data.AUTOTUNE).prefetch(2)
 iterator = iter(dataset)
 
 # Train
