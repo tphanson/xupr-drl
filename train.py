@@ -54,7 +54,7 @@ def map_fn(experiences, info):
     return experiences, info
 
 
-dataset = replay_buffer.as_dataset().map(map_fn).prefetch(2)
+dataset = replay_buffer.as_dataset().map(map_fn).prefetch(3)
 iterator = iter(dataset)
 
 # Train
