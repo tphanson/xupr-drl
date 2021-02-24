@@ -39,9 +39,11 @@ class Network():
             self._num_of_atoms
         )
         # Policies
-        self.policy = self._policy()
-        self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
-        self.step = tf.Variable(initial_value=0, dtype=tf.int32, name='step')
+        with tf.device('/GPU:0'):
+            self.policy = self._policy()
+            self.optimizer = keras.optimizers.Adam(learning_rate=0.00001)
+            self.step = tf.Variable(
+                initial_value=0, dtype=tf.int32, name='step')
         # Checkpoints
         self.checkpoint = tf.train.Checkpoint(
             optimizer=self.optimizer,
@@ -55,7 +57,8 @@ class Network():
         )
         self._load_checkpoint()
         # Double Q-Learning
-        self.target_policy = self._policy()
+        with tf.device('/GPU:1'):
+            self.target_policy = self._policy()
         self._update_target_policy()
         # Multi-steps Learning
         self._n_steps = 5
