@@ -88,5 +88,3 @@ while agent.get_step() <= num_iterations:
         start = time.time()
         loss = 0
         ER.save()
-        if avg_return > 4000:
-            break
