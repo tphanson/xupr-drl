@@ -9,7 +9,7 @@ class PrioritizedExperienceRelay:
         self.data_spec = data_spec
         self.batch_size = batch_size
         self.n_steps = n_steps
-        self.replay_buffer_capacity = 100000
+        self.replay_buffer_capacity = 1000000
 
         self.name = 'PER'
         self.server = reverb.Server([
