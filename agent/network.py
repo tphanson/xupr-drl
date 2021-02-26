@@ -3,7 +3,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tf_agents.trajectories import policy_step, trajectory, time_step
 
-from helper.utils import parse_experiences, build_mask
+from helper.utils import build_mask
 
 # Saving dir
 CHECKPOINT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
