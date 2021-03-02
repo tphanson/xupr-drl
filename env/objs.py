@@ -14,8 +14,8 @@ def obstacle(clientId, pos=None, dynamic=False, avoids=[]):
                         'sphere2.urdf']
     dynamic_obstacles = ['cube_rotate.urdf']
     obstacles = dynamic_obstacles if dynamic else static_obstacles
-    zone_rad = 6  # Dropping zone
-    safe_rad = 0.5  # Ohmni's position
+    zone_rad = 8  # Dropping zone
+    safe_rad = 0.5  # Minimum radian
     while pos is None:
         x = random()*zone_rad * (-1 if random() > 0.5 else 1)
         y = random()*zone_rad * (-1 if random() > 0.5 else 1)
