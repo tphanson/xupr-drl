@@ -50,7 +50,8 @@ class Env:
     def _randomize_destination(self):
         x = random() * self.dst_rad * (-1 if random() > 0.5 else 1)
         y = random() * self.dst_rad * (-1 if random() > 0.5 else 1)
-        destination = np.array([x, y], dtype=np.float32)
+        # destination = np.array([x, y], dtype=np.float32)
+        destination = np.array([8, 0], dtype=np.float32)
         p.addUserDebugLine(
             np.append(destination, 0.),  # From
             np.append(destination, 3.),  # To
@@ -67,8 +68,9 @@ class Env:
         plane(self.client_id)
         ohmni_id, _capture_image = ohmni(self.client_id)
         # Add obstacles at random positions
-        for _ in range(self.num_of_obstacles):
-            obstacle(self.client_id, avoids=[[0, 0], self.destination])
+        obstacle(self.client_id, pos=[4, 0, 0.5])
+        # for _ in range(self.num_of_obstacles):
+        #     obstacle(self.client_id, avoids=[[0, 0], self.destination])
         # Return
         return ohmni_id, _capture_image
 

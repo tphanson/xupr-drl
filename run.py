@@ -1,5 +1,12 @@
+import tensorflow as tf
+
 from env import OhmniInSpace
 from agent import network
+
+# Config GPU
+gpus = tf.config.list_physical_devices('GPU')
+print("Num GPUs Available: ", len(gpus))
+tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
 
 # Environment
 env = OhmniInSpace.env(gui=True)
