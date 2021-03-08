@@ -51,7 +51,7 @@ class Env:
         x = random() * self.dst_rad * (-1 if random() > 0.5 else 1)
         y = random() * self.dst_rad * (-1 if random() > 0.5 else 1)
         # destination = np.array([x, y], dtype=np.float32)
-        vibe = random() * 1 * (-1 if random() > 0.5 else 1)
+        vibe = random() * 4 * (-1 if random() > 0.5 else 1)
         destination = np.array([5, vibe], dtype=np.float32)
         p.addUserDebugLine(
             np.append(destination, 0.),  # From
@@ -69,8 +69,8 @@ class Env:
         plane(self.client_id)
         ohmni_id, _capture_image = ohmni(self.client_id)
         # Add obstacles at random positions
-        vibe = random() * 1 * (-1 if random() > 0.5 else 1)
-        obstacle(self.client_id, pos=[3+vibe, 0, 0.5])
+        # vibe = random() * 1.5 * (-1 if random() > 0.5 else 1)
+        # obstacle(self.client_id, pos=[3+vibe, 0, 0.5])
         # for _ in range(self.num_of_obstacles):
         #     obstacle(self.client_id, avoids=[[0, 0], self.destination])
         # Return
@@ -231,7 +231,7 @@ class PyEnv(py_environment.PyEnvironment):
         # return False, -0.05 + cosine_sim / 20
         if cosine_sim < 0:
             return False, -0.05
-        return False, 0.01
+        return False, 0
 
     def _reset(self):
         """ Reset environment"""
