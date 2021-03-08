@@ -69,8 +69,8 @@ class Env:
         plane(self.client_id)
         ohmni_id, _capture_image = ohmni(self.client_id)
         # Add obstacles at random positions
-        # vibe = random() * 1.5 * (-1 if random() > 0.5 else 1)
-        # obstacle(self.client_id, pos=[3+vibe, 0, 0.5])
+        vibe = random() * 1.5 * (-1 if random() > 0.5 else 1)
+        obstacle(self.client_id, pos=[3+vibe, 0, 0.5])
         # for _ in range(self.num_of_obstacles):
         #     obstacle(self.client_id, avoids=[[0, 0], self.destination])
         # Return
