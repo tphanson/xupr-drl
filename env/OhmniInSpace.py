@@ -229,8 +229,6 @@ class PyEnv(py_environment.PyEnvironment):
             return False, -0.1
         # Ohmni on his way
         # return False, -0.05 + cosine_sim / 20
-        if cosine_sim < 0:
-            return False, -0.05
         return False, cosine_sim / 20
 
     def _reset(self):
