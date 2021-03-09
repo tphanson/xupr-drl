@@ -218,7 +218,7 @@ class PyEnv(py_environment.PyEnvironment):
     def _compute_reward(self):
         """ Compute reward and return (<stopped>, <reward>) """
         # Reaching the destination
-        _, cosine_sim = self._get_pose_state()
+        pose, cosine_sim = self._get_pose_state()
         if self._is_finished():
             return True, 10
         # Dead
@@ -230,7 +230,7 @@ class PyEnv(py_environment.PyEnvironment):
         # Ohmni on his way
         # if cosine_sim < 0:
         #     return False, -0.05
-        return False, cosine_sim/20
+        return False, cosine_sim/20 - np.linalg.norm(pose)/100
 
     def _reset(self):
         """ Reset environment"""
