@@ -230,7 +230,7 @@ class PyEnv(py_environment.PyEnvironment):
         # Ohmni on his way
         # if cosine_sim < 0:
         #     return False, -0.05
-        return False, cosine_sim/20 - np.linalg.norm(pose)/100
+        return False, cosine_sim/20 - min(10, np.linalg.norm(pose))/200
 
     def _reset(self):
         """ Reset environment"""
@@ -262,7 +262,7 @@ class PyEnv(py_environment.PyEnvironment):
         pose, _ = self._get_pose_state()  # Pose state
         cent = np.array([w / 2, h / 2], dtype=np.float32)
         dest = -pose * 32 + cent  # Transpose/Scale/Tranform
-        color = 0.5
+        color = min(10, np.linalg.norm(pose))/20 + 0.25 # [0.25, 0.75]
         mask = cv.line(mask,
                        (int(cent[1]), int(cent[0])),
                        (int(dest[1]), int(dest[0])),
