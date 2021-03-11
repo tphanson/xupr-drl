@@ -50,9 +50,9 @@ class Env:
     def _randomize_destination(self):
         x = random() * self.dst_rad * (-1 if random() > 0.5 else 1)
         y = random() * self.dst_rad * (-1 if random() > 0.5 else 1)
-        # destination = np.array([x, y], dtype=np.float32)
-        vibe = random() * 4 * (-1 if random() > 0.5 else 1)
-        destination = np.array([5, vibe], dtype=np.float32)
+        # vibe = random() * 4 * (-1 if random() > 0.5 else 1) # Level 1
+        # destination = np.array([5, vibe], dtype=np.float32) # Level 1
+        destination = np.array([x, y], dtype=np.float32)  # Level 2
         p.addUserDebugLine(
             np.append(destination, 0.),  # From
             np.append(destination, 3.),  # To
@@ -69,10 +69,11 @@ class Env:
         plane(self.client_id)
         ohmni_id, _capture_image = ohmni(self.client_id)
         # Add obstacles at random positions
-        vibe = random() * 1.5 * (-1 if random() > 0.5 else 1)
-        obstacle(self.client_id, pos=[3+vibe, 0, 0.5])
-        # for _ in range(self.num_of_obstacles):
-        #     obstacle(self.client_id, avoids=[[0, 0], self.destination])
+        # vibe = random() * 1.5 * (-1 if random() > 0.5 else 1) # Level 1
+        # obstacle(self.client_id, pos=[3+vibe, 0, 0.5]) # Level 1
+        for _ in range(self.num_of_obstacles):  # Level 2
+            obstacle(self.client_id, avoids=[
+                     [0, 0], self.destination])  # Level 2
         # Return
         return ohmni_id, _capture_image
 
@@ -127,7 +128,7 @@ class PyEnv(py_environment.PyEnvironment):
         self.max_steps = 500
         self._fix_vanish_hyperparam = 0.15
         self._num_of_obstacles = 25
-        self._dst_rad = 5
+        self._dst_rad = 8
         # Actions
         self._num_values = 5
         self._values = np.linspace(-1, 1, self._num_values)
@@ -228,8 +229,6 @@ class PyEnv(py_environment.PyEnvironment):
         if self._is_collided():
             return False, -0.1
         # Ohmni on his way
-        # if cosine_sim < 0:
-        #     return False, -0.05
         return False, (cosine_sim - min(10, np.linalg.norm(pose))/10)/20
 
     def _reset(self):
@@ -262,7 +261,7 @@ class PyEnv(py_environment.PyEnvironment):
         pose, _ = self._get_pose_state()  # Pose state
         cent = np.array([w / 2, h / 2], dtype=np.float32)
         dest = -pose * 32 + cent  # Transpose/Scale/Tranform
-        color = min(10, np.linalg.norm(pose))/20 + 0.25 # [0.25, 0.75]
+        color = min(10, np.linalg.norm(pose))/20 + 0.25  # [0.25, 0.75]
         mask = cv.line(mask,
                        (int(cent[1]), int(cent[0])),
                        (int(dest[1]), int(dest[0])),
