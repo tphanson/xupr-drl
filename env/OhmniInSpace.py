@@ -128,7 +128,7 @@ class PyEnv(py_environment.PyEnvironment):
         self.max_steps = 500
         self._fix_vanish_hyperparam = 0.15
         self._num_of_obstacles = 25
-        self._dst_rad = 8
+        self._dst_rad = 6
         # Actions
         self._num_values = 5
         self._values = np.linspace(-1, 1, self._num_values)
