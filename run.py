@@ -9,7 +9,7 @@ print("Num GPUs Available: ", len(gpus))
 tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
 
 # Environment
-env = OhmniInSpace.env(gui=True)
+env = OhmniInSpace.env(gui=True, training=False)
 
 # Agent
 agent = network.Network(

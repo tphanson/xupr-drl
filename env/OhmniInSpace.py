@@ -125,7 +125,7 @@ class PyEnv(py_environment.PyEnvironment):
         # Parameters
         self.training = training
         self.image_shape = image_shape
-        self.input_shape = self.image_shape + (3,)
+        self.input_shape = self.image_shape + (4,)
         self.max_steps = 500
         self._fix_vanish_hyperparam = 0.15
         self._num_of_obstacles = 25
@@ -225,7 +225,6 @@ class PyEnv(py_environment.PyEnvironment):
             return True, 10
         # Dead
         if self._is_fatal():
-            print("Damn")
             return True, -10
         # Colliding
         if self._is_collided():
