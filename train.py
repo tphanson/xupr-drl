@@ -10,7 +10,7 @@ from helper.utils import parse_experiences
 
 
 # Environment
-train_env = OhmniInSpace.env()
+train_env = OhmniInSpace.env(gui=False, training=True)
 
 # Agent
 agent = network.Network(
@@ -37,14 +37,9 @@ random_policy = random_tf_policy.RandomTFPolicy(
     action_spec=agent.action_spec,
     policy_state_spec=agent.policy_state_spec,
 )
-baseline = agent
 replay_buffer.collect_steps(
     train_env, random_policy,
-    steps=int(initial_collect_steps/2)
-)
-replay_buffer.collect_steps(
-    train_env, baseline,
-    steps=int(initial_collect_steps/2)
+    steps=initial_collect_steps
 )
 
 

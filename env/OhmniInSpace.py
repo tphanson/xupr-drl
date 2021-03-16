@@ -120,9 +120,10 @@ class Env:
 
 
 class PyEnv(py_environment.PyEnvironment):
-    def __init__(self, gui=False, image_shape=(96, 96)):
+    def __init__(self, gui=False, training=False, image_shape=(96, 96)):
         super(PyEnv, self).__init__()
         # Parameters
+        self.training = training
         self.image_shape = image_shape
         self.input_shape = self.image_shape + (3,)
         self.max_steps = 500
@@ -197,7 +198,7 @@ class PyEnv(py_environment.PyEnvironment):
         position, orientation = self._env.getBasePositionAndOrientation()
         position = np.array(position, dtype=np.float32)
         # Ohmni exceeds the number of steps
-        if self._num_steps > self.max_steps:
+        if self._num_steps > self.max_steps and not self.training:
             return True
         # Ohmni felt out of the environment
         if abs(position[2]) >= 0.5:
@@ -229,7 +230,7 @@ class PyEnv(py_environment.PyEnvironment):
         if self._is_collided():
             return False, -0.1
         # Ohmni on his way
-        return False, (cosine_sim - min(10, np.linalg.norm(pose))/10)/20
+        return False, (cosine_sim - min(1, np.linalg.norm(pose)/10))/20
 
     def _reset(self):
         """ Reset environment"""
@@ -309,7 +310,7 @@ class PyEnv(py_environment.PyEnvironment):
         return img
 
 
-def env(gui=False):
+def env(gui=False, training=False):
     """ Convert pyenv to tfenv """
     pyenv = PyEnv(gui=gui)
     tfenv = tf_py_environment.TFPyEnvironment(pyenv)
