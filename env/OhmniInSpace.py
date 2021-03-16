@@ -225,6 +225,7 @@ class PyEnv(py_environment.PyEnvironment):
             return True, 10
         # Dead
         if self._is_fatal():
+            print("Damn")
             return True, -10
         # Colliding
         if self._is_collided():
@@ -312,6 +313,6 @@ class PyEnv(py_environment.PyEnvironment):
 
 def env(gui=False, training=False):
     """ Convert pyenv to tfenv """
-    pyenv = PyEnv(gui=gui)
+    pyenv = PyEnv(gui=gui, training=training)
     tfenv = tf_py_environment.TFPyEnvironment(pyenv)
     return tfenv
