@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
 import ray
+import numpy as np
 
 from env import OhmniInSpace
 from agent import network
@@ -40,7 +40,8 @@ class EvalActor(object):
 
 class ExpectedReturn:
     def __init__(self):
-        self.returns = None
+        self.filename = 'models/eval.npy'
+        self.returns = self.load()
 
     def eval_multiple_episodes(self, num_episodes):
         actors = [
@@ -67,7 +68,13 @@ class ExpectedReturn:
             self.returns.append(avg_return)
         return avg_return
 
+    def load(self):
+        try:
+            data = np.load(self.filename)
+            return list(data)
+        except IOError:
+            return None
+
     def save(self):
-        plt.plot(self.returns)
-        plt.ylabel('Average Return')
-        plt.savefig('models/eval.jpg')
+        data = np.array(self.returns)
+        np.save(self.filename, data)

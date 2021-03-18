@@ -58,6 +58,7 @@ class Network():
         self._load_checkpoint()
         # Double Q-Learning
         with tf.device('/GPU:1'):
+        # with tf.device('/GPU:0'):
             self.target_policy = self._policy()
         self._update_target_policy()
         # Multi-steps Learning

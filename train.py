@@ -10,7 +10,7 @@ from helper.utils import parse_experiences
 
 
 # Environment
-train_env = OhmniInSpace.env(gui=False, training=True)
+train_env = OhmniInSpace.env(gui=True, training=True)
 
 # Agent
 agent = network.Network(
@@ -45,6 +45,7 @@ replay_buffer.collect_steps(
 
 def map_fn(experiences, info):
     with tf.device('/GPU:1'):
+    # with tf.device('/GPU:0'):
         start_policy_state, end_policy_state = agent._hidden_states(
             experiences)
         step_types, start_state, action, rewards, end_state = parse_experiences(
