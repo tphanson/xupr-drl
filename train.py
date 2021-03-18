@@ -10,7 +10,7 @@ from helper.utils import parse_experiences
 
 
 # Environment
-train_env = OhmniInSpace.env(gui=True, training=True)
+train_env = OhmniInSpace.env(gui=False, training=True)
 
 # Agent
 agent = network.Network(
