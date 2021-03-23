@@ -230,7 +230,7 @@ class PyEnv(py_environment.PyEnvironment):
             return False, -0.1
         # Ohmni on his way
         # return False, (cosine_sim - min(1, np.linalg.norm(pose)/10))/20
-        return False, - min(1, np.linalg.norm(pose)/10)
+        return False, - min(10, np.linalg.norm(pose))/100
 
     def _reset(self):
         """ Reset environment"""
